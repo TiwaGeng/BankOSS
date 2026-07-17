@@ -246,7 +246,12 @@ export type Database = {
       is_authenticated: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "loan_officer" | "accountant" | "viewer"
+      app_role:
+        | "admin"
+        | "loan_officer"
+        | "accountant"
+        | "viewer"
+        | "super_admin"
       loan_status: "active" | "completed" | "overdue" | "renewed"
       tx_type: "income" | "expense"
     }
@@ -376,7 +381,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "loan_officer", "accountant", "viewer"],
+      app_role: [
+        "admin",
+        "loan_officer",
+        "accountant",
+        "viewer",
+        "super_admin",
+      ],
       loan_status: ["active", "completed", "overdue", "renewed"],
       tx_type: ["income", "expense"],
     },

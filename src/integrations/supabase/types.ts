@@ -14,9 +14,37 @@ export type Database = {
   }
   public: {
     Tables: {
+      businesses: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          owner_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string | null
+          business_id: string | null
           created_at: string
           created_by: string | null
           full_name: string
@@ -29,6 +57,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           full_name: string
@@ -41,6 +70,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           full_name?: string
@@ -51,10 +81,19 @@ export type Database = {
           phone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loans: {
         Row: {
+          business_id: string | null
           client_id: string
           created_at: string
           created_by: string | null
@@ -70,6 +109,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_id?: string | null
           client_id: string
           created_at?: string
           created_by?: string | null
@@ -85,6 +125,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_id?: string | null
           client_id?: string
           created_at?: string
           created_by?: string | null
@@ -101,6 +142,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "loans_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "loans_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -112,6 +160,7 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          business_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -122,6 +171,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -132,6 +182,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -141,6 +192,13 @@ export type Database = {
           paid_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_loan_id_fkey"
             columns: ["loan_id"]
@@ -153,6 +211,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          business_id: string | null
           created_at: string
           full_name: string | null
           id: string
@@ -161,6 +220,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          business_id?: string | null
           created_at?: string
           full_name?: string | null
           id: string
@@ -169,17 +229,27 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          business_id?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
           phone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
           amount: number
+          business_id: string | null
           category: string
           created_at: string
           created_by: string | null
@@ -190,6 +260,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          business_id?: string | null
           category: string
           created_at?: string
           created_by?: string | null
@@ -200,6 +271,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          business_id?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
@@ -208,34 +280,54 @@ export type Database = {
           occurred_at?: string
           type?: Database["public"]["Enums"]["tx_type"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
+          business_id: string | null
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          business_id?: string | null
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          business_id?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_user_business_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -243,7 +335,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role_in_business: {
+        Args: {
+          _business_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_authenticated: { Args: never; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:

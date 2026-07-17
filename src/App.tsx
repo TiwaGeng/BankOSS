@@ -28,6 +28,7 @@ import ComplicatedLoans from "./pages/reports/ComplicatedLoans";
 import RenewedLoans from "./pages/reports/RenewedLoans";
 import Settings from "./pages/Settings";
 import Messages from "./pages/clients/Messages";
+import Businesses from "./pages/Businesses";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/reports/complicated" element={<ComplicatedLoans />} />
               <Route path="/reports/renewed" element={<RenewedLoans />} />
               <Route path="/employees" element={<Employees />} />
+              <Route path="/businesses" element={<Businesses />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

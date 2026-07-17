@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Landmark, LayoutDashboard, Users, HandCoins, Receipt, BarChart3, LogOut, ArrowLeftRight, UserCog, ChevronDown, Settings as SettingsIcon, Menu, X } from "lucide-react";
+import { Landmark, LayoutDashboard, Users, HandCoins, Receipt, BarChart3, LogOut, ArrowLeftRight, UserCog, ChevronDown, Settings as SettingsIcon, Menu, X, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import QuickActions from "@/components/app/QuickActions";
@@ -111,7 +111,9 @@ const AppLayout = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const nav: NavItem[] = hasRole("admin")
+  const nav: NavItem[] = hasRole("super_admin")
+    ? [{ type: "link", to: "/businesses", label: "Businesses", icon: Building2 }, ...baseNav, { type: "link", to: "/employees", label: "Employees", icon: UserCog }]
+    : hasRole("admin")
     ? [...baseNav, { type: "link", to: "/employees", label: "Employees", icon: UserCog }]
     : baseNav;
 

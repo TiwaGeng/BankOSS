@@ -6,8 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-type Role = "admin" | "loan_officer" | "accountant" | "viewer";
-
+// Developer-only: create a business AND its first admin user.
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -32,44 +31,29 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE);
     const callerId = userData.user.id;
 
-    // Caller must be an admin (in a business) and NOT a super_admin acting here
-    const { data: isBizAdmin } = await admin.rpc("has_role", { _user_id: callerId, _role: "admin" });
-    if (!isBizAdmin) {
-      return new Response(JSON.stringify({ error: "Forbidden: business admin only" }), {
+    const { data: isSuper } = await admin.rpc("is_super_admin", { _user_id: callerId });
+    if (!isSuper) {
+      return new Response(JSON.stringify({ error: "Forbidden: developer only" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Resolve caller's business
-    const { data: callerProfile } = await admin
-      .from("profiles")
-      .select("business_id")
-      .eq("id", callerId)
-      .maybeSingle();
-    const businessId = callerProfile?.business_id;
-    if (!businessId) {
-      return new Response(JSON.stringify({ error: "Your account is not linked to a business yet." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const body = await req.json();
+    const business_name: string = (body.business_name ?? "").trim();
     const email: string = (body.email ?? "").trim();
     const password: string = body.password ?? "";
     const full_name: string = (body.full_name ?? "").trim();
     const phone: string | null = body.phone ?? null;
-    const role: Role = body.role;
-    const validRoles: Role[] = ["admin", "loan_officer", "accountant", "viewer"];
 
-    if (!email || !password || password.length < 6 || !full_name || !validRoles.includes(role)) {
+    if (!business_name || !email || !password || password.length < 6 || !full_name) {
       return new Response(JSON.stringify({ error: "Invalid input" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // 1. Create the admin user
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password,
@@ -82,17 +66,29 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
     const newUserId = created.user.id;
 
-    // Ensure profile exists and is linked to this business
-    await admin.from("profiles").upsert({ id: newUserId, full_name, phone, business_id: businessId });
+    // 2. Create the business owned by that user
+    const { data: biz, error: bizErr } = await admin
+      .from("businesses")
+      .insert({ name: business_name, owner_id: newUserId, created_by: callerId })
+      .select()
+      .single();
+    if (bizErr || !biz) {
+      // best-effort cleanup
+      await admin.auth.admin.deleteUser(newUserId);
+      return new Response(JSON.stringify({ error: bizErr?.message ?? "Business create failed" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Reset roles for that user, then insert scoped role
+    // 3. Link profile + role to that business
+    await admin.from("profiles").upsert({ id: newUserId, full_name, phone, business_id: biz.id });
     await admin.from("user_roles").delete().eq("user_id", newUserId);
     const { error: roleErr } = await admin
       .from("user_roles")
-      .insert({ user_id: newUserId, role, business_id: businessId });
+      .insert({ user_id: newUserId, role: "admin", business_id: biz.id });
     if (roleErr) {
       return new Response(JSON.stringify({ error: roleErr.message }), {
         status: 400,
@@ -100,9 +96,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, user_id: newUserId }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ success: true, business_id: biz.id, admin_user_id: newUserId }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500,

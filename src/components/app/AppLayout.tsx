@@ -127,10 +127,12 @@ const AppLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const nav: NavItem[] = hasRole("super_admin")
-    ? [{ type: "link", to: "/businesses", label: "Businesses", icon: Building2 }, ...baseNav, { type: "link", to: "/employees", label: "Employees", icon: UserCog }]
+    ? developerNav
+    : hasRole("platform_admin")
+    ? platformAdminNav
     : hasRole("admin")
-    ? [...baseNav, { type: "link", to: "/employees", label: "Employees", icon: UserCog }]
-    : baseNav;
+    ? [...businessNav, { type: "link", to: "/employees", label: "Employees", icon: UserCog }]
+    : businessNav;
 
   const initialOpen: Record<string, boolean> = {};
   nav.forEach((n) => {

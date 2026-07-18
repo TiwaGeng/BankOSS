@@ -1,6 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
+
+async function extractFnError(error: unknown, data: unknown): Promise<string | null> {
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const body = await error.context.json();
+      if (body?.error) return String(body.error);
+    } catch {
+      try { return await (error as FunctionsHttpError).context.text(); } catch { /* noop */ }
+    }
+    return error.message;
+  }
+  if (error && typeof error === "object" && "message" in error) return String((error as Error).message);
+  if (data && typeof data === "object" && "error" in (data as any)) return String((data as any).error);
+  return null;
+}
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,7 +91,8 @@ const DeveloperAdmins = () => {
     });
     setSubmitting(false);
     if (error || (data as any)?.error) {
-      toast({ title: "Failed", description: error?.message ?? (data as any)?.error, variant: "destructive" });
+      const msg = (await extractFnError(error, data)) ?? "Could not create admin";
+      toast({ title: "Failed", description: msg, variant: "destructive" });
       return;
     }
     toast({ title: "Admin created", description: `${parsed.data.email} can sign in.` });
@@ -87,7 +104,8 @@ const DeveloperAdmins = () => {
     if (!confirm("Delete this admin? Their businesses will remain.")) return;
     const { data, error } = await supabase.functions.invoke("delete-admin", { body: { user_id: uid } });
     if (error || (data as any)?.error) {
-      toast({ title: "Failed", description: error?.message ?? (data as any)?.error, variant: "destructive" });
+      const msg = (await extractFnError(error, data)) ?? "Could not delete admin";
+      toast({ title: "Failed", description: msg, variant: "destructive" });
       return;
     }
     toast({ title: "Deleted" });

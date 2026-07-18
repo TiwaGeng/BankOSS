@@ -70,6 +70,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return arr.some((x) => roles.includes(x));
     },
     isSuperAdmin: roles.includes("super_admin"),
+    isPlatformAdmin: roles.includes("platform_admin"),
+    isBusinessUser: !!businessId && !roles.includes("super_admin") && !roles.includes("platform_admin"),
     refresh: async () => {
       if (user) await loadProfile(user.id);
     },

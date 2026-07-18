@@ -353,6 +353,7 @@ export type Database = {
         | "accountant"
         | "viewer"
         | "super_admin"
+        | "platform_admin"
       loan_status: "active" | "completed" | "overdue" | "renewed"
       tx_type: "income" | "expense"
     }
@@ -488,6 +489,7 @@ export const Constants = {
         "accountant",
         "viewer",
         "super_admin",
+        "platform_admin",
       ],
       loan_status: ["active", "completed", "overdue", "renewed"],
       tx_type: ["income", "expense"],

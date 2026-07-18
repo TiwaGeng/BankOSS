@@ -6,7 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
 };
 
-// Developer-only: delete a platform admin (and their profile/roles). Does NOT delete their businesses.
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -20,54 +25,24 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (userErr || !userData.user) return json({ error: "Unauthorized" });
+
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: isSuper } = await admin.rpc("is_super_admin", { _user_id: userData.user.id });
-    if (!isSuper) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!isSuper) return json({ error: "Forbidden" });
 
     const body = await req.json();
     const target: string = body.user_id;
-    if (!target) {
-      return new Response(JSON.stringify({ error: "user_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!target) return json({ error: "user_id required" });
 
-    // safety: only allow deleting platform_admin users
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", target);
     const isPlat = (roles ?? []).some((r) => r.role === "platform_admin");
-    if (!isPlat) {
-      return new Response(JSON.stringify({ error: "Target is not a platform admin" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!isPlat) return json({ error: "Target is not a platform admin" });
 
     const { error } = await admin.auth.admin.deleteUser(target);
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    if (error) return json({ error: error.message });
+    return json({ success: true });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: (e as Error).message });
   }
 });

@@ -22,6 +22,7 @@ interface Business {
   id: string;
   name: string;
   owner_id: string | null;
+  created_by: string | null;
   created_at: string;
 }
 

@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Landmark, LayoutDashboard, Users, HandCoins, Receipt, BarChart3, LogOut, ArrowLeftRight, UserCog, ChevronDown, Settings as SettingsIcon, Menu, X, Building2 } from "lucide-react";
+import { Landmark, LayoutDashboard, Users, HandCoins, Receipt, BarChart3, LogOut, ArrowLeftRight, UserCog, ChevronDown, Settings as SettingsIcon, Menu, X, Building2, ShieldCheck, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import QuickActions from "@/components/app/QuickActions";
@@ -11,7 +11,22 @@ type NavItem =
   | { type: "link"; to: string; label: string; icon: typeof LayoutDashboard }
   | { type: "group"; key: string; label: string; icon: typeof LayoutDashboard; children: NavChild[] };
 
-const baseNav: NavItem[] = [
+const developerNav: NavItem[] = [
+  { type: "link", to: "/developer", label: "Dashboard", icon: LayoutDashboard },
+  { type: "link", to: "/developer/admins", label: "Admins", icon: ShieldCheck },
+  { type: "link", to: "/developer/reports", label: "Reports", icon: BarChart3 },
+  { type: "link", to: "/developer/settings", label: "Settings", icon: SettingsIcon },
+];
+
+const platformAdminNav: NavItem[] = [
+  { type: "link", to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { type: "link", to: "/admin/businesses", label: "Businesses", icon: Building2 },
+  { type: "link", to: "/admin/payments", label: "Payments", icon: Receipt },
+  { type: "link", to: "/admin/transactions", label: "Transactions", icon: ArrowLeftRight },
+  { type: "link", to: "/admin/settings", label: "Settings", icon: SettingsIcon },
+];
+
+const businessNav: NavItem[] = [
   { type: "link", to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   {
     type: "group", key: "clients", label: "Clients", icon: Users, children: [

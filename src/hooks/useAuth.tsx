@@ -13,6 +13,8 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   hasRole: (r: AppRole | AppRole[]) => boolean;
   isSuperAdmin: boolean;
+  isPlatformAdmin: boolean;
+  isBusinessUser: boolean;
   refresh: () => Promise<void>;
 }
 

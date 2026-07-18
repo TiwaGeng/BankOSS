@@ -91,7 +91,8 @@ const DeveloperAdmins = () => {
     });
     setSubmitting(false);
     if (error || (data as any)?.error) {
-      toast({ title: "Failed", description: error?.message ?? (data as any)?.error, variant: "destructive" });
+      const msg = (await extractFnError(error, data)) ?? "Could not create admin";
+      toast({ title: "Failed", description: msg, variant: "destructive" });
       return;
     }
     toast({ title: "Admin created", description: `${parsed.data.email} can sign in.` });

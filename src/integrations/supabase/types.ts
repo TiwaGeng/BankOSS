@@ -344,6 +344,10 @@ export type Database = {
         Returns: boolean
       }
       is_authenticated: { Args: never; Returns: boolean }
+      is_platform_admin_of: {
+        Args: { _business_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
@@ -353,6 +357,7 @@ export type Database = {
         | "accountant"
         | "viewer"
         | "super_admin"
+        | "platform_admin"
       loan_status: "active" | "completed" | "overdue" | "renewed"
       tx_type: "income" | "expense"
     }
@@ -488,6 +493,7 @@ export const Constants = {
         "accountant",
         "viewer",
         "super_admin",
+        "platform_admin",
       ],
       loan_status: ["active", "completed", "overdue", "renewed"],
       tx_type: ["income", "expense"],

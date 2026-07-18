@@ -22,11 +22,13 @@ interface Business {
   id: string;
   name: string;
   owner_id: string | null;
+  created_by: string | null;
   created_at: string;
 }
 
 const Businesses = () => {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, isPlatformAdmin } = useAuth();
+  const allowed = isSuperAdmin || isPlatformAdmin;
   const [items, setItems] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -34,12 +36,12 @@ const Businesses = () => {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("businesses").select("id, name, owner_id, created_at").order("created_at", { ascending: false });
+    const { data } = await supabase.from("businesses").select("id, name, owner_id, created_by, created_at").order("created_at", { ascending: false });
     setItems((data ?? []) as Business[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (allowed) load(); }, [allowed]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,19 +65,19 @@ const Businesses = () => {
       toast({ title: "Failed", description: error?.message ?? (data as any)?.error ?? "Could not create", variant: "destructive" });
       return;
     }
-    toast({ title: "Business created", description: `${parsed.data.business_name} is ready. Admin can sign in with ${parsed.data.email}.` });
+    toast({ title: "Business created", description: `${parsed.data.business_name} is ready. Owner can sign in with ${parsed.data.email}.` });
     setForm({ business_name: "", full_name: "", email: "", phone: "", password: "" });
     load();
   };
 
-  if (!isSuperAdmin) {
+  if (!allowed) {
     return (
       <div className="max-w-xl mx-auto mt-12">
         <Card>
           <CardContent className="p-8 text-center space-y-3">
             <ShieldAlert className="h-10 w-10 text-destructive mx-auto" />
-            <h2 className="text-xl font-semibold">Developer only</h2>
-            <p className="text-sm text-muted-foreground">Only the developer (super admin) can manage business accounts.</p>
+            <h2 className="text-xl font-semibold">Restricted</h2>
+            <p className="text-sm text-muted-foreground">Only developers and platform admins can manage business accounts.</p>
           </CardContent>
         </Card>
       </div>
@@ -100,15 +102,15 @@ const Businesses = () => {
               <Input value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label>Admin full name</Label>
+              <Label>Owner full name</Label>
               <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label>Admin email</Label>
+              <Label>Owner email</Label>
               <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label>Admin phone</Label>
+              <Label>Owner phone</Label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
             <div className="space-y-2">

@@ -21,7 +21,7 @@ const Auth = () => {
   const [busy, setBusy] = useState(false);
 
   if (loading) return null;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to="/" replace />;
 
   const onLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,7 +36,7 @@ const Auth = () => {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Welcome back");
-    navigate("/dashboard");
+    navigate("/");
   };
 
   const onSignup = async (e: React.FormEvent<HTMLFormElement>) => {

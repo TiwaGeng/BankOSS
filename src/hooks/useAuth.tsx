@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "super_admin" | "admin" | "loan_officer" | "accountant" | "viewer";
+type AppRole = "super_admin" | "platform_admin" | "admin" | "loan_officer" | "accountant" | "viewer";
 
 interface AuthContextValue {
   user: User | null;
@@ -13,6 +13,8 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   hasRole: (r: AppRole | AppRole[]) => boolean;
   isSuperAdmin: boolean;
+  isPlatformAdmin: boolean;
+  isBusinessUser: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -68,6 +70,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return arr.some((x) => roles.includes(x));
     },
     isSuperAdmin: roles.includes("super_admin"),
+    isPlatformAdmin: roles.includes("platform_admin"),
+    isBusinessUser: !!businessId && !roles.includes("super_admin") && !roles.includes("platform_admin"),
     refresh: async () => {
       if (user) await loadProfile(user.id);
     },

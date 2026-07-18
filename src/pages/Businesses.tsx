@@ -102,15 +102,15 @@ const Businesses = () => {
               <Input value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label>Admin full name</Label>
+              <Label>Owner full name</Label>
               <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label>Admin email</Label>
+              <Label>Owner email</Label>
               <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label>Admin phone</Label>
+              <Label>Owner phone</Label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
             <div className="space-y-2">

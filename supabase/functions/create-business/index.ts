@@ -32,8 +32,9 @@ Deno.serve(async (req) => {
     const callerId = userData.user.id;
 
     const { data: isSuper } = await admin.rpc("is_super_admin", { _user_id: callerId });
-    if (!isSuper) {
-      return new Response(JSON.stringify({ error: "Forbidden: developer only" }), {
+    const { data: isPlat } = await admin.rpc("has_role", { _user_id: callerId, _role: "platform_admin" });
+    if (!isSuper && !isPlat) {
+      return new Response(JSON.stringify({ error: "Forbidden: developer or platform admin only" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

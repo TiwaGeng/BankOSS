@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/app/AppLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -29,9 +29,22 @@ import RenewedLoans from "./pages/reports/RenewedLoans";
 import Settings from "./pages/Settings";
 import Messages from "./pages/clients/Messages";
 import Businesses from "./pages/Businesses";
+import DeveloperDashboard from "./pages/developer/DeveloperDashboard";
+import DeveloperAdmins from "./pages/developer/DeveloperAdmins";
+import AdminBusinessesView from "./pages/developer/AdminBusinesses";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+const RoleRedirect = () => {
+  const { user, loading, isSuperAdmin, isPlatformAdmin } = useAuth();
+  if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (isSuperAdmin) return <Navigate to="/developer" replace />;
+  if (isPlatformAdmin) return <Navigate to="/admin" replace />;
+  return <Navigate to="/dashboard" replace />;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -41,9 +54,24 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<RoleRedirect />} />
             <Route path="/auth" element={<Auth />} />
             <Route element={<AppLayout />}>
+              {/* Developer portal */}
+              <Route path="/developer" element={<DeveloperDashboard />} />
+              <Route path="/developer/admins" element={<DeveloperAdmins />} />
+              <Route path="/developer/admins/:id" element={<AdminBusinessesView />} />
+              <Route path="/developer/reports" element={<Reports />} />
+              <Route path="/developer/settings" element={<Settings />} />
+
+              {/* Platform admin portal */}
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/businesses" element={<Businesses />} />
+              <Route path="/admin/payments" element={<Payments />} />
+              <Route path="/admin/transactions" element={<Transactions />} />
+              <Route path="/admin/settings" element={<Settings />} />
+
+              {/* Business user routes */}
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/clients" element={<Clients />} />
               <Route path="/clients/new" element={<NewClient />} />

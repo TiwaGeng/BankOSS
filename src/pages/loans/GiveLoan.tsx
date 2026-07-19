@@ -44,9 +44,10 @@ const GiveLoan = () => {
     });
   }, []);
 
-  if (!hasRole(["admin", "loan_officer"])) return <p className="text-muted-foreground">You don't have permission to give loans.</p>;
+  if (!hasRole(["admin", "loan_officer", "accountant"])) return <p className="text-muted-foreground">You don't have permission to give loans.</p>;
 
   const totalPayable = principal * (1 + Number(rate) / 100);
+  const clientReceives = Math.max(0, principal - SERVICE_FEE);
   const days = months * 30;
   const weeks = months * 4;
   const perDay = days > 0 ? totalPayable / days : 0;
@@ -57,6 +58,9 @@ const GiveLoan = () => {
     e.preventDefault();
     const parsed = schema.safeParse({ client_id: clientId, principal, interest_rate: Number(rate), term_months: months });
     if (!parsed.success) return toast.error(parsed.error.errors[0].message);
+    if (parsed.data.principal <= SERVICE_FEE) {
+      return toast.error(`Principal must be greater than the service fee (${SERVICE_FEE.toLocaleString()} Frw)`);
+    }
     if (activeClientIds.has(parsed.data.client_id)) {
       return toast.error("This client already has an active loan. Renew the existing loan instead.");
     }
@@ -65,9 +69,12 @@ const GiveLoan = () => {
       `schedule:${schedule}`,
       schedule === "daily" ? `per_day:${perDay.toFixed(2)}` : `per_week:${perWeek.toFixed(2)}`,
       `total_payable:${totalPayable.toFixed(2)}`,
+      `service_fee:${SERVICE_FEE}`,
+      `client_received:${clientReceives.toFixed(2)}`,
     ];
     const { error } = await supabase.from("loans").insert({
       ...parsed.data,
+      service_fee: SERVICE_FEE,
       status: "active" as const,
       given_at: new Date().toISOString().slice(0, 10),
       due_at: due.toISOString().slice(0, 10),

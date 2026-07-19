@@ -61,9 +61,10 @@ const RenewLoan = () => {
   const selectedPaid = selected ? (paidMap[selected.id] || 0) : 0;
   const selectedRemaining = selected ? remainingFor(selected) : 0;
   const selectedPP = selected ? parsePerPeriod(selected.notes) : null;
+  const selectedTotal = selected ? Number(selected.principal) * (1 + Number(selected.interest_rate || 0) / 100) + Number(selected.fine || 0) : 0;
+  const paidPct = selectedTotal > 0 ? (selectedPaid / selectedTotal) * 100 : 0;
+  const canRenew = paidPct >= 80;
 
-  // NEW calculation: tax/interest is applied on the original principal first,
-  // THEN the carried unpaid balance is added on top.
   const newPrincipal = selected ? Number(selected.principal) : 0;
   const interestOnly = newPrincipal * (Number(rate) / 100);
   const newTotalPayable = newPrincipal + interestOnly + selectedRemaining;
@@ -75,6 +76,7 @@ const RenewLoan = () => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selected) return toast.error("Pick a loan");
+    if (!canRenew) return toast.error(`Client must pay at least 80% of current loan. Currently paid: ${paidPct.toFixed(1)}%`);
     const due = new Date(); due.setMonth(due.getMonth() + months);
     const noteParts = [
       `schedule:${schedule}`,

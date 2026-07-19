@@ -7,19 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const schema = z.object({
   first_name: z.string().trim().min(1, "First name required").max(80),
   last_name: z.string().trim().min(1, "Last name required").max(80),
   phone: z.string().trim().max(40).optional().or(z.literal("")),
-  national_id: z.string().trim().max(60).optional().or(z.literal("")),
+  customer_type: z.enum(["field", "office"]),
   address: z.string().trim().max(200).optional().or(z.literal("")),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
-interface ClientRow { id: string; full_name: string; last_name: string | null; phone: string | null; national_id: string | null; address: string | null; }
+interface ClientRow { id: string; full_name: string; last_name: string | null; phone: string | null; customer_type: "field" | "office"; address: string | null; }
 
 const NewClient = () => {
   const { user, hasRole } = useAuth();
@@ -27,10 +29,11 @@ const NewClient = () => {
   const [items, setItems] = useState<ClientRow[]>([]);
   const [search, setSearch] = useState("");
   const [countdown, setCountdown] = useState(0);
+  const [customerType, setCustomerType] = useState<"field" | "office">("office");
 
   const load = async () => {
-    const { data } = await supabase.from("clients").select("id, full_name, last_name, phone, national_id, address").order("created_at", { ascending: false });
-    setItems((data ?? []) as ClientRow[]);
+    const { data } = await supabase.from("clients").select("id, full_name, last_name, phone, customer_type, address").order("created_at", { ascending: false });
+    setItems(((data as unknown) as ClientRow[]) ?? []);
   };
   useEffect(() => { load(); }, []);
 
@@ -40,7 +43,7 @@ const NewClient = () => {
     return () => clearTimeout(t);
   }, [countdown]);
 
-  if (!hasRole(["admin", "loan_officer"])) {
+  if (!hasRole(["admin", "loan_officer", "accountant"])) {
     return <p className="text-muted-foreground">You don't have permission to add clients.</p>;
   }
 
@@ -48,7 +51,7 @@ const NewClient = () => {
     e.preventDefault();
     const form = e.currentTarget;
     setSaving(true);
-    const fd = Object.fromEntries(new FormData(form));
+    const fd = { ...Object.fromEntries(new FormData(form)), customer_type: customerType };
     const parsed = schema.safeParse(fd);
     if (!parsed.success) { setSaving(false); return toast.error(parsed.error.errors[0].message); }
     const { first_name, last_name, ...rest } = parsed.data;
@@ -63,12 +66,13 @@ const NewClient = () => {
     toast.success("✓ Client added successfully!");
     setCountdown(5);
     form.reset();
+    setCustomerType("office");
     load();
   };
 
   const filtered = items.filter((c) => {
     const q = search.toLowerCase();
-    return !q || c.full_name.toLowerCase().includes(q) || (c.last_name ?? "").toLowerCase().includes(q) || (c.phone ?? "").includes(q) || (c.national_id ?? "").toLowerCase().includes(q);
+    return !q || c.full_name.toLowerCase().includes(q) || (c.last_name ?? "").toLowerCase().includes(q) || (c.phone ?? "").includes(q);
   });
 
   return (
@@ -93,7 +97,16 @@ const NewClient = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><Label>Phone number</Label><Input name="phone" /></div>
-              <div><Label>National ID</Label><Input name="national_id" /></div>
+              <div>
+                <Label>Customer type</Label>
+                <Select value={customerType} onValueChange={(v) => setCustomerType(v as "field" | "office")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="field">Field — we collect at their place</SelectItem>
+                    <SelectItem value="office">Office — they bring money to office</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div><Label>Business address</Label><Input name="address" /></div>
             <div><Label>Notes</Label><Textarea name="notes" rows={3} /></div>
@@ -110,7 +123,7 @@ const NewClient = () => {
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow><TableHead>Name</TableHead><TableHead>Last name</TableHead><TableHead>Phone</TableHead><TableHead>National ID</TableHead><TableHead>Address</TableHead></TableRow>
+              <TableRow><TableHead>Name</TableHead><TableHead>Last name</TableHead><TableHead>Phone</TableHead><TableHead>Type</TableHead><TableHead>Address</TableHead></TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
@@ -120,7 +133,7 @@ const NewClient = () => {
                   <TableCell className="font-medium">{c.full_name}</TableCell>
                   <TableCell>{c.last_name || "—"}</TableCell>
                   <TableCell>{c.phone || "—"}</TableCell>
-                  <TableCell>{c.national_id || "—"}</TableCell>
+                  <TableCell><Badge variant={c.customer_type === "field" ? "default" : "secondary"}>{c.customer_type}</Badge></TableCell>
                   <TableCell>{c.address || "—"}</TableCell>
                 </TableRow>
               ))}

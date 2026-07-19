@@ -13,6 +13,7 @@ import { z } from "zod";
 import { UserPlus, ShieldAlert } from "lucide-react";
 
 type Role = "admin" | "loan_officer" | "accountant" | "viewer";
+type EmpType = "field" | "office";
 
 const roleLabels: Record<Role, string> = {
   admin: "Admin",
@@ -27,12 +28,14 @@ const schema = z.object({
   phone: z.string().trim().max(30).optional().or(z.literal("")),
   password: z.string().min(6, "Min 6 characters").max(72),
   role: z.enum(["admin", "loan_officer", "accountant", "viewer"]),
+  employee_type: z.enum(["field", "office"]),
 });
 
 interface Employee {
   id: string;
   full_name: string | null;
   phone: string | null;
+  employee_type: EmpType | null;
   created_at: string;
   role: Role;
 }
@@ -44,16 +47,17 @@ const Employees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "", role: "viewer" as Role });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "", role: "viewer" as Role, employee_type: "office" as EmpType });
 
   const load = async () => {
     setLoading(true);
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-    const { data: profiles } = await supabase.from("profiles").select("id, full_name, phone, created_at");
+    const { data: profiles } = await supabase.from("profiles").select("id, full_name, phone, employee_type, created_at");
     const merged: Employee[] = (profiles ?? []).map((p) => ({
       id: p.id,
       full_name: p.full_name,
       phone: p.phone,
+      employee_type: (p as { employee_type: EmpType | null }).employee_type ?? null,
       created_at: p.created_at,
       role: (roles?.find((r) => r.user_id === p.id)?.role ?? "viewer") as Role,
     }));
@@ -61,9 +65,7 @@ const Employees = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,15 +82,16 @@ const Employees = () => {
         full_name: parsed.data.full_name,
         phone: parsed.data.phone || null,
         role: parsed.data.role,
+        employee_type: parsed.data.employee_type,
       },
     });
     setSubmitting(false);
-    if (error || (data as any)?.error) {
-      toast({ title: "Failed", description: error?.message ?? (data as any)?.error ?? "Could not create", variant: "destructive" });
+    if (error || (data as { error?: string })?.error) {
+      toast({ title: "Failed", description: error?.message ?? (data as { error?: string })?.error ?? "Could not create", variant: "destructive" });
       return;
     }
     toast({ title: "Employee created", description: `${parsed.data.full_name} added as ${roleLabels[parsed.data.role]}` });
-    setForm({ full_name: "", email: "", phone: "", password: "", role: "viewer" });
+    setForm({ full_name: "", email: "", phone: "", password: "", role: "viewer", employee_type: "office" });
     load();
   };
 
@@ -119,7 +122,7 @@ const Employees = () => {
     <div className="space-y-8">
       <header>
         <h1 className="font-display text-3xl font-bold">Employees</h1>
-        <p className="text-muted-foreground">Create staff accounts and assign roles.</p>
+        <p className="text-muted-foreground">Create staff accounts, assign roles and work type.</p>
       </header>
 
       <Card>
@@ -155,8 +158,18 @@ const Employees = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end">
-              <Button type="submit" disabled={submitting} className="w-full">
+            <div className="space-y-2">
+              <Label>Work type</Label>
+              <Select value={form.employee_type} onValueChange={(v) => setForm({ ...form, employee_type: v as EmpType })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="office">Office employee</SelectItem>
+                  <SelectItem value="field">Field employee</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end md:col-span-2 lg:col-span-3">
+              <Button type="submit" disabled={submitting} className="w-full md:w-auto">
                 {submitting ? "Creating…" : "Create employee"}
               </Button>
             </div>
@@ -177,6 +190,7 @@ const Employees = () => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead>Work type</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Joined</TableHead>
                 </TableRow>
@@ -189,6 +203,7 @@ const Employees = () => {
                       {emp.id === user?.id && <Badge variant="secondary" className="ml-2">You</Badge>}
                     </TableCell>
                     <TableCell>{emp.phone || "—"}</TableCell>
+                    <TableCell>{emp.employee_type ? <Badge variant={emp.employee_type === "field" ? "default" : "secondary"}>{emp.employee_type}</Badge> : "—"}</TableCell>
                     <TableCell>
                       <Select value={emp.role} onValueChange={(v) => updateRole(emp.id, v as Role)} disabled={emp.id === user?.id}>
                         <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -203,7 +218,7 @@ const Employees = () => {
                   </TableRow>
                 ))}
                 {employees.length === 0 && (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No employees yet.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No employees yet.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

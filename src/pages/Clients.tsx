@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Printer, FileSpreadsheet, FileText, FileDown, BookOpen, IdCard } from "lucide-react";
@@ -12,7 +13,7 @@ import { exportExcel, exportPDF, exportWord, printRows } from "@/lib/exporters";
 
 interface Client {
   id: string; full_name: string; last_name: string | null; phone: string | null;
-  national_id: string | null; address: string | null; notes: string | null; created_at: string;
+  customer_type: "field" | "office"; address: string | null; notes: string | null; created_at: string;
 }
 
 const Clients = () => {
@@ -26,7 +27,7 @@ const Clients = () => {
   const load = async () => {
     const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
     if (error) toast.error(error.message);
-    setItems((data ?? []) as Client[]);
+    setItems(((data as unknown) as Client[]) ?? []);
   };
   useEffect(() => { load(); }, []);
 
@@ -40,12 +41,12 @@ const Clients = () => {
 
   const filtered = items.filter((c) => {
     const q = search.toLowerCase();
-    return !q || c.full_name.toLowerCase().includes(q) || (c.last_name ?? "").toLowerCase().includes(q) || (c.phone ?? "").includes(q) || (c.national_id ?? "").toLowerCase().includes(q);
+    return !q || c.full_name.toLowerCase().includes(q) || (c.last_name ?? "").toLowerCase().includes(q) || (c.phone ?? "").includes(q);
   });
 
   const exportRows = () => filtered.map((c) => ({
     Name: c.full_name, "Last Name": c.last_name ?? "", Phone: c.phone ?? "",
-    "National ID": c.national_id ?? "", Address: c.address ?? "",
+    Type: c.customer_type, Address: c.address ?? "",
   }));
 
   return (
@@ -55,7 +56,7 @@ const Clients = () => {
           <h1 className="font-display text-3xl font-bold">Client List</h1>
           <p className="text-muted-foreground">{items.length} total · {filtered.length} shown</p>
         </div>
-        <Input placeholder="Search any client (name, phone, ID)…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-72" />
+        <Input placeholder="Search any client (name, phone)…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-72" />
       </header>
 
       <div className="flex flex-wrap gap-2">
@@ -72,7 +73,7 @@ const Clients = () => {
               <TableHead>Name</TableHead>
               <TableHead>Last name</TableHead>
               <TableHead>Phone</TableHead>
-              <TableHead>National ID</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Business address</TableHead>
               <TableHead className="w-64">Actions</TableHead>
             </TableRow>
@@ -85,7 +86,7 @@ const Clients = () => {
                 <TableCell className="font-medium">{c.full_name}</TableCell>
                 <TableCell>{c.last_name || "—"}</TableCell>
                 <TableCell>{c.phone || "—"}</TableCell>
-                <TableCell>{c.national_id || "—"}</TableCell>
+                <TableCell><Badge variant={c.customer_type === "field" ? "default" : "secondary"}>{c.customer_type}</Badge></TableCell>
                 <TableCell>{c.address || "—"}</TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
@@ -108,7 +109,7 @@ const Clients = () => {
               <dt className="text-muted-foreground">First name</dt><dd className="col-span-2 font-medium">{bio.full_name}</dd>
               <dt className="text-muted-foreground">Last name</dt><dd className="col-span-2 font-medium">{bio.last_name || "—"}</dd>
               <dt className="text-muted-foreground">Phone</dt><dd className="col-span-2">{bio.phone || "—"}</dd>
-              <dt className="text-muted-foreground">National ID</dt><dd className="col-span-2">{bio.national_id || "—"}</dd>
+              <dt className="text-muted-foreground">Customer type</dt><dd className="col-span-2">{bio.customer_type}</dd>
               <dt className="text-muted-foreground">Business address</dt><dd className="col-span-2">{bio.address || "—"}</dd>
               <dt className="text-muted-foreground">Notes</dt><dd className="col-span-2">{bio.notes || "—"}</dd>
               <dt className="text-muted-foreground">Registered</dt><dd className="col-span-2">{new Date(bio.created_at).toLocaleString()}</dd>

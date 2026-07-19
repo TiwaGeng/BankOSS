@@ -159,6 +159,7 @@ const RenewLoan = () => {
                 <div className="flex justify-between"><span className="text-muted-foreground">Paid amount</span><strong>{selectedPaid.toLocaleString()}</strong></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Remaining unpaid</span><strong>{selectedRemaining.toLocaleString()}</strong></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Current {selectedPP?.schedule === "weekly" ? "weekly" : "daily"} payment</span><strong>{selectedPP ? selectedPP.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}</strong></div>
+                <div className="flex justify-between border-t pt-1 mt-1"><span className="text-muted-foreground">% paid</span><strong className={canRenew ? "text-green-600" : "text-destructive"}>{paidPct.toFixed(1)}% {canRenew ? "✓ eligible" : "(need 80%)"}</strong></div>
               </div>
             )}
 

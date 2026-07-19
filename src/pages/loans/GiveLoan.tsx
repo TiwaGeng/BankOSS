@@ -159,6 +159,8 @@ const GiveLoan = () => {
               </div>
             </div>
             <div className="rounded-lg border bg-muted/40 p-3 text-sm space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Service fee (kept at office)</span><strong>{SERVICE_FEE.toLocaleString()}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Client receives</span><strong>{clientReceives.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Total payable</span><strong>{totalPayable.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>
               {schedule === "daily" ? (
                 <div className="flex justify-between"><span className="text-muted-foreground">Amount to pay every day ({days} days)</span><strong>{perDay.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>

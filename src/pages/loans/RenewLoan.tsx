@@ -204,7 +204,7 @@ const RenewLoan = () => {
               </div>
             )}
 
-            <Button type="submit" disabled={!selected}>Renew</Button>
+            <Button type="submit" disabled={!selected || !canRenew}>{selected && !canRenew ? `Not eligible (${paidPct.toFixed(0)}%/80%)` : "Renew"}</Button>
           </form>
         </CardContent>
       </Card>

@@ -31,6 +31,7 @@ const GiveLoan = () => {
   const [clientId, setClientId] = useState(params.get("client") ?? "");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [principal, setPrincipal] = useState<number>(0);
+  const SERVICE_FEE = 10000;
   const [rate, setRate] = useState<string>("15");
   const [months, setMonths] = useState<number>(1);
   const [schedule, setSchedule] = useState<"daily" | "weekly">("daily");

@@ -61,9 +61,10 @@ const RenewLoan = () => {
   const selectedPaid = selected ? (paidMap[selected.id] || 0) : 0;
   const selectedRemaining = selected ? remainingFor(selected) : 0;
   const selectedPP = selected ? parsePerPeriod(selected.notes) : null;
+  const selectedTotal = selected ? Number(selected.principal) * (1 + Number(selected.interest_rate || 0) / 100) + Number(selected.fine || 0) : 0;
+  const paidPct = selectedTotal > 0 ? (selectedPaid / selectedTotal) * 100 : 0;
+  const canRenew = paidPct >= 80;
 
-  // NEW calculation: tax/interest is applied on the original principal first,
-  // THEN the carried unpaid balance is added on top.
   const newPrincipal = selected ? Number(selected.principal) : 0;
   const interestOnly = newPrincipal * (Number(rate) / 100);
   const newTotalPayable = newPrincipal + interestOnly + selectedRemaining;
@@ -75,6 +76,7 @@ const RenewLoan = () => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selected) return toast.error("Pick a loan");
+    if (!canRenew) return toast.error(`Client must pay at least 80% of current loan. Currently paid: ${paidPct.toFixed(1)}%`);
     const due = new Date(); due.setMonth(due.getMonth() + months);
     const noteParts = [
       `schedule:${schedule}`,
@@ -157,6 +159,7 @@ const RenewLoan = () => {
                 <div className="flex justify-between"><span className="text-muted-foreground">Paid amount</span><strong>{selectedPaid.toLocaleString()}</strong></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Remaining unpaid</span><strong>{selectedRemaining.toLocaleString()}</strong></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Current {selectedPP?.schedule === "weekly" ? "weekly" : "daily"} payment</span><strong>{selectedPP ? selectedPP.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}</strong></div>
+                <div className="flex justify-between border-t pt-1 mt-1"><span className="text-muted-foreground">% paid</span><strong className={canRenew ? "text-green-600" : "text-destructive"}>{paidPct.toFixed(1)}% {canRenew ? "✓ eligible" : "(need 80%)"}</strong></div>
               </div>
             )}
 
@@ -201,7 +204,7 @@ const RenewLoan = () => {
               </div>
             )}
 
-            <Button type="submit" disabled={!selected}>Renew</Button>
+            <Button type="submit" disabled={!selected || !canRenew}>{selected && !canRenew ? `Not eligible (${paidPct.toFixed(0)}%/80%)` : "Renew"}</Button>
           </form>
         </CardContent>
       </Card>

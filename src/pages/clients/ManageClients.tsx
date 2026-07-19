@@ -4,25 +4,28 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-interface Client { id: string; full_name: string; last_name: string | null; phone: string | null; national_id: string | null; address: string | null; }
+interface Client { id: string; full_name: string; last_name: string | null; phone: string | null; customer_type: "field" | "office"; address: string | null; }
 
 const ManageClients = () => {
   const { hasRole } = useAuth();
-  const canEdit = hasRole(["admin", "loan_officer"]);
+  const canEdit = hasRole(["admin", "loan_officer", "accountant"]);
   const canDelete = hasRole("admin");
   const [items, setItems] = useState<Client[]>([]);
   const [editing, setEditing] = useState<Client | null>(null);
+  const [editType, setEditType] = useState<"field" | "office">("office");
   const [search, setSearch] = useState("");
 
   const load = async () => {
-    const { data, error } = await supabase.from("clients").select("id, full_name, last_name, phone, national_id, address").order("full_name");
+    const { data, error } = await supabase.from("clients").select("id, full_name, last_name, phone, customer_type, address").order("full_name");
     if (error) toast.error(error.message);
-    setItems(data ?? []);
+    setItems(((data as unknown) as Client[]) ?? []);
   };
   useEffect(() => { load(); }, []);
 
@@ -32,8 +35,8 @@ const ManageClients = () => {
     const fd = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
     const { error } = await supabase.from("clients").update({
       full_name: fd.full_name, last_name: fd.last_name || null, phone: fd.phone || null,
-      national_id: fd.national_id || null, address: fd.address || null,
-    }).eq("id", editing.id);
+      customer_type: editType, address: fd.address || null,
+    } as never).eq("id", editing.id);
     if (error) return toast.error(error.message);
     toast.success("Updated");
     setEditing(null);
@@ -62,7 +65,7 @@ const ManageClients = () => {
       <div className="bg-card border rounded-xl shadow-soft overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow><TableHead>First name</TableHead><TableHead>Last name</TableHead><TableHead>Phone</TableHead><TableHead>National ID</TableHead><TableHead>Address</TableHead><TableHead className="w-24"></TableHead></TableRow>
+            <TableRow><TableHead>First name</TableHead><TableHead>Last name</TableHead><TableHead>Phone</TableHead><TableHead>Type</TableHead><TableHead>Address</TableHead><TableHead className="w-24"></TableHead></TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
@@ -72,10 +75,10 @@ const ManageClients = () => {
                 <TableCell className="font-medium">{c.full_name}</TableCell>
                 <TableCell>{c.last_name || "—"}</TableCell>
                 <TableCell>{c.phone || "—"}</TableCell>
-                <TableCell>{c.national_id || "—"}</TableCell>
+                <TableCell><Badge variant={c.customer_type === "field" ? "default" : "secondary"}>{c.customer_type}</Badge></TableCell>
                 <TableCell>{c.address || "—"}</TableCell>
                 <TableCell className="flex gap-1">
-                  {canEdit && <Button variant="ghost" size="icon" onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button>}
+                  {canEdit && <Button variant="ghost" size="icon" onClick={() => { setEditing(c); setEditType(c.customer_type); }}><Pencil className="h-4 w-4" /></Button>}
                   {canDelete && <Button variant="ghost" size="icon" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                 </TableCell>
               </TableRow>
@@ -94,7 +97,16 @@ const ManageClients = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Phone</Label><Input name="phone" defaultValue={editing.phone ?? ""} /></div>
-                <div><Label>National ID</Label><Input name="national_id" defaultValue={editing.national_id ?? ""} /></div>
+                <div>
+                  <Label>Customer type</Label>
+                  <Select value={editType} onValueChange={(v) => setEditType(v as "field" | "office")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="field">Field</SelectItem>
+                      <SelectItem value="office">Office</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div><Label>Address</Label><Input name="address" defaultValue={editing.address ?? ""} /></div>
               <Button type="submit" className="w-full">Save changes</Button>

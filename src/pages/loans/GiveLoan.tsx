@@ -31,6 +31,7 @@ const GiveLoan = () => {
   const [clientId, setClientId] = useState(params.get("client") ?? "");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [principal, setPrincipal] = useState<number>(0);
+  const SERVICE_FEE = 10000;
   const [rate, setRate] = useState<string>("15");
   const [months, setMonths] = useState<number>(1);
   const [schedule, setSchedule] = useState<"daily" | "weekly">("daily");
@@ -43,9 +44,10 @@ const GiveLoan = () => {
     });
   }, []);
 
-  if (!hasRole(["admin", "loan_officer"])) return <p className="text-muted-foreground">You don't have permission to give loans.</p>;
+  if (!hasRole(["admin", "loan_officer", "accountant"])) return <p className="text-muted-foreground">You don't have permission to give loans.</p>;
 
   const totalPayable = principal * (1 + Number(rate) / 100);
+  const clientReceives = Math.max(0, principal - SERVICE_FEE);
   const days = months * 30;
   const weeks = months * 4;
   const perDay = days > 0 ? totalPayable / days : 0;
@@ -56,6 +58,9 @@ const GiveLoan = () => {
     e.preventDefault();
     const parsed = schema.safeParse({ client_id: clientId, principal, interest_rate: Number(rate), term_months: months });
     if (!parsed.success) return toast.error(parsed.error.errors[0].message);
+    if (parsed.data.principal <= SERVICE_FEE) {
+      return toast.error(`Principal must be greater than the service fee (${SERVICE_FEE.toLocaleString()} Frw)`);
+    }
     if (activeClientIds.has(parsed.data.client_id)) {
       return toast.error("This client already has an active loan. Renew the existing loan instead.");
     }
@@ -64,9 +69,12 @@ const GiveLoan = () => {
       `schedule:${schedule}`,
       schedule === "daily" ? `per_day:${perDay.toFixed(2)}` : `per_week:${perWeek.toFixed(2)}`,
       `total_payable:${totalPayable.toFixed(2)}`,
+      `service_fee:${SERVICE_FEE}`,
+      `client_received:${clientReceives.toFixed(2)}`,
     ];
     const { error } = await supabase.from("loans").insert({
       ...parsed.data,
+      service_fee: SERVICE_FEE,
       status: "active" as const,
       given_at: new Date().toISOString().slice(0, 10),
       due_at: due.toISOString().slice(0, 10),
@@ -151,6 +159,8 @@ const GiveLoan = () => {
               </div>
             </div>
             <div className="rounded-lg border bg-muted/40 p-3 text-sm space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Service fee (kept at office)</span><strong>{SERVICE_FEE.toLocaleString()}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Client receives</span><strong>{clientReceives.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Total payable</span><strong>{totalPayable.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>
               {schedule === "daily" ? (
                 <div className="flex justify-between"><span className="text-muted-foreground">Amount to pay every day ({days} days)</span><strong>{perDay.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>

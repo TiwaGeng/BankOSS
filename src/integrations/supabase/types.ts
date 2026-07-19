@@ -47,10 +47,10 @@ export type Database = {
           business_id: string | null
           created_at: string
           created_by: string | null
+          customer_type: Database["public"]["Enums"]["customer_type"]
           full_name: string
           id: string
           last_name: string | null
-          national_id: string | null
           notes: string | null
           phone: string | null
           updated_at: string
@@ -60,10 +60,10 @@ export type Database = {
           business_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_type?: Database["public"]["Enums"]["customer_type"]
           full_name: string
           id?: string
           last_name?: string | null
-          national_id?: string | null
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -73,10 +73,10 @@ export type Database = {
           business_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_type?: Database["public"]["Enums"]["customer_type"]
           full_name?: string
           id?: string
           last_name?: string | null
-          national_id?: string | null
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -104,6 +104,7 @@ export type Database = {
           interest_rate: number
           notes: string | null
           principal: number
+          service_fee: number
           status: Database["public"]["Enums"]["loan_status"]
           term_months: number
           updated_at: string
@@ -120,6 +121,7 @@ export type Database = {
           interest_rate?: number
           notes?: string | null
           principal: number
+          service_fee?: number
           status?: Database["public"]["Enums"]["loan_status"]
           term_months?: number
           updated_at?: string
@@ -136,6 +138,7 @@ export type Database = {
           interest_rate?: number
           notes?: string | null
           principal?: number
+          service_fee?: number
           status?: Database["public"]["Enums"]["loan_status"]
           term_months?: number
           updated_at?: string
@@ -213,6 +216,7 @@ export type Database = {
           avatar_url: string | null
           business_id: string | null
           created_at: string
+          employee_type: Database["public"]["Enums"]["employee_type"] | null
           full_name: string | null
           id: string
           phone: string | null
@@ -222,6 +226,7 @@ export type Database = {
           avatar_url?: string | null
           business_id?: string | null
           created_at?: string
+          employee_type?: Database["public"]["Enums"]["employee_type"] | null
           full_name?: string | null
           id: string
           phone?: string | null
@@ -231,6 +236,7 @@ export type Database = {
           avatar_url?: string | null
           business_id?: string | null
           created_at?: string
+          employee_type?: Database["public"]["Enums"]["employee_type"] | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -245,6 +251,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_payments: {
+        Row: {
+          admin_user_id: string
+          amount: number
+          created_at: string
+          id: string
+          months_granted: number
+          paid_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          months_granted: number
+          paid_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          months_granted?: number
+          paid_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          current_period_end: string | null
+          id: string
+          monthly_amount: number
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          monthly_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          monthly_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       transactions: {
         Row: {
@@ -327,6 +387,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_subscription_status: {
+        Args: never
+        Returns: {
+          admin_user_id: string
+          current_period_end: string
+          days_left: number
+          grace_end: string
+          monthly_amount: number
+          status: string
+        }[]
+      }
       get_user_business_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -358,6 +429,8 @@ export type Database = {
         | "viewer"
         | "super_admin"
         | "platform_admin"
+      customer_type: "field" | "office"
+      employee_type: "field" | "office"
       loan_status: "active" | "completed" | "overdue" | "renewed"
       tx_type: "income" | "expense"
     }
@@ -495,6 +568,8 @@ export const Constants = {
         "super_admin",
         "platform_admin",
       ],
+      customer_type: ["field", "office"],
+      employee_type: ["field", "office"],
       loan_status: ["active", "completed", "overdue", "renewed"],
       tx_type: ["income", "expense"],
     },

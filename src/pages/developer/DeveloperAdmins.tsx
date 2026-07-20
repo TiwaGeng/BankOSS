@@ -148,8 +148,36 @@ const DeveloperAdmins = () => {
               <Label>Temporary password</Label>
               <Input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
             </div>
-            <div className="flex items-end">
-              <Button type="submit" disabled={submitting} className="w-full">
+            <div className="md:col-span-2 lg:col-span-3 rounded-lg border p-3 space-y-3 bg-muted/30">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={form.enable_payment}
+                  onChange={(e) => setForm({ ...form, enable_payment: e.target.checked })}
+                />
+                Enable subscription payment for this admin
+              </label>
+              {form.enable_payment && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Monthly amount (RWF)</Label>
+                    <Input type="number" min={0} value={form.monthly_amount} onChange={(e) => setForm({ ...form, monthly_amount: e.target.value })} required={form.enable_payment} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Initial months paid</Label>
+                    <select
+                      className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                      value={form.initial_months}
+                      onChange={(e) => setForm({ ...form, initial_months: e.target.value })}
+                    >
+                      {[1,2,3,6,9,12].map((m) => <option key={m} value={m}>{m} month{m>1?"s":""}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex items-end md:col-span-2 lg:col-span-3">
+              <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Creating…" : "Create admin"}
               </Button>
             </div>

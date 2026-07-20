@@ -33,6 +33,7 @@ import DeveloperDashboard from "./pages/developer/DeveloperDashboard";
 import DeveloperAdmins from "./pages/developer/DeveloperAdmins";
 import AdminBusinessesView from "./pages/developer/AdminBusinesses";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/clients/book" element={<ClientBook />} />
               <Route path="/clients/messages" element={<Messages />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/subscription" element={<Subscription />} />
               <Route path="/loans" element={<Loans />} />
               <Route path="/loans/new" element={<GiveLoan />} />
               <Route path="/loans/renew" element={<RenewLoan />} />

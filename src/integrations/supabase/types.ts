@@ -256,26 +256,44 @@ export type Database = {
         Row: {
           admin_user_id: string
           amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string
           id: string
           months_granted: number
+          months_requested: number | null
+          note: string | null
           paid_at: string
+          proof_url: string | null
+          status: string
         }
         Insert: {
           admin_user_id: string
           amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           id?: string
           months_granted: number
+          months_requested?: number | null
+          note?: string | null
           paid_at?: string
+          proof_url?: string | null
+          status?: string
         }
         Update: {
           admin_user_id?: string
           amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           id?: string
           months_granted?: number
+          months_requested?: number | null
+          note?: string | null
           paid_at?: string
+          proof_url?: string | null
+          status?: string
         }
         Relationships: []
       }

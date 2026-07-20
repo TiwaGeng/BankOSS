@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowDownCircle, ArrowUpCircle, Banknote, FileBarChart, ShieldCheck, Receipt } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Banknote, FileBarChart, ShieldCheck, Receipt, UserPlus, HandCoins } from "lucide-react";
 import { toast } from "sonner";
 
 type Kind = "payable" | "receivable" | "banking" | "expense";
@@ -28,6 +28,8 @@ const QuickActions = () => {
   const { user, hasRole } = useAuth();
   const nav = useNavigate();
   const canPost = hasRole(["admin", "accountant"]);
+  const canAddClient = hasRole(["admin", "accountant", "loan_officer"]);
+  const canGiveLoan = hasRole(["admin", "loan_officer"]);
   const [kind, setKind] = useState<Kind | null>(null);
   const [bankingType, setBankingType] = useState<"income" | "expense">("income");
 
@@ -63,6 +65,12 @@ const QuickActions = () => {
   return (
     <div className="sticky top-0 z-30 bg-card/95 backdrop-blur border-b">
       <div className="flex flex-wrap items-center gap-2 px-4 lg:px-6 py-2.5">
+        {canAddClient && (
+          <Button size="sm" className={btn} onClick={() => nav("/clients/new")}><UserPlus className="h-4 w-4" /> Add Client</Button>
+        )}
+        {canGiveLoan && (
+          <Button size="sm" className={btn} onClick={() => nav("/loans/new")}><HandCoins className="h-4 w-4" /> Give Loan</Button>
+        )}
         {canPost && <>
           <Button size="sm" variant="outline" className={btn} onClick={() => setKind("payable")}><ArrowUpCircle className="h-4 w-4" /> Add Payable</Button>
           <Button size="sm" variant="outline" className={btn} onClick={() => setKind("receivable")}><ArrowDownCircle className="h-4 w-4" /> Add Receivable</Button>

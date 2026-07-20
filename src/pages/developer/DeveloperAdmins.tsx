@@ -31,6 +31,9 @@ const schema = z.object({
   email: z.string().trim().email().max(255),
   phone: z.string().trim().max(30).optional().or(z.literal("")),
   password: z.string().min(6).max(72),
+  enable_payment: z.boolean().optional(),
+  monthly_amount: z.coerce.number().min(0).optional(),
+  initial_months: z.coerce.number().int().min(0).max(24).optional(),
 });
 
 interface AdminRow {
@@ -45,7 +48,7 @@ const DeveloperAdmins = () => {
   const [items, setItems] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "", enable_payment: false, monthly_amount: "", initial_months: "1" });
 
   const load = async () => {
     setLoading(true);
@@ -87,6 +90,8 @@ const DeveloperAdmins = () => {
         email: parsed.data.email,
         phone: parsed.data.phone || null,
         password: parsed.data.password,
+        monthly_amount: form.enable_payment ? Number(form.monthly_amount || 0) : 0,
+        initial_months: form.enable_payment ? Number(form.initial_months || 0) : 0,
       },
     });
     setSubmitting(false);
@@ -96,7 +101,7 @@ const DeveloperAdmins = () => {
       return;
     }
     toast({ title: "Admin created", description: `${parsed.data.email} can sign in.` });
-    setForm({ full_name: "", email: "", phone: "", password: "" });
+    setForm({ full_name: "", email: "", phone: "", password: "", enable_payment: false, monthly_amount: "", initial_months: "1" });
     load();
   };
 
@@ -143,8 +148,36 @@ const DeveloperAdmins = () => {
               <Label>Temporary password</Label>
               <Input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
             </div>
-            <div className="flex items-end">
-              <Button type="submit" disabled={submitting} className="w-full">
+            <div className="md:col-span-2 lg:col-span-3 rounded-lg border p-3 space-y-3 bg-muted/30">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={form.enable_payment}
+                  onChange={(e) => setForm({ ...form, enable_payment: e.target.checked })}
+                />
+                Enable subscription payment for this admin
+              </label>
+              {form.enable_payment && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Monthly amount (RWF)</Label>
+                    <Input type="number" min={0} value={form.monthly_amount} onChange={(e) => setForm({ ...form, monthly_amount: e.target.value })} required={form.enable_payment} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Initial months paid</Label>
+                    <select
+                      className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                      value={form.initial_months}
+                      onChange={(e) => setForm({ ...form, initial_months: e.target.value })}
+                    >
+                      {[1,2,3,6,9,12].map((m) => <option key={m} value={m}>{m} month{m>1?"s":""}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex items-end md:col-span-2 lg:col-span-3">
+              <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Creating…" : "Create admin"}
               </Button>
             </div>

@@ -48,7 +48,7 @@ const DeveloperAdmins = () => {
   const [items, setItems] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "", enable_payment: false, monthly_amount: "", initial_months: "1" });
 
   const load = async () => {
     setLoading(true);

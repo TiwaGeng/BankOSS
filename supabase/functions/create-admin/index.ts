@@ -82,6 +82,33 @@ Deno.serve(async (req) => {
       .insert({ user_id: newUserId, role: "platform_admin", business_id: null });
     if (roleErr) return json({ error: roleErr.message });
 
+    // Optional subscription setup
+    const monthly_amount = Number(body.monthly_amount ?? 0);
+    const initial_months = Number(body.initial_months ?? 0);
+    if (monthly_amount > 0) {
+      const now = new Date();
+      const periodEnd = initial_months > 0
+        ? new Date(now.getFullYear(), now.getMonth() + initial_months, now.getDate()).toISOString()
+        : null;
+      await admin.from("subscriptions").upsert({
+        admin_user_id: newUserId,
+        monthly_amount,
+        current_period_end: periodEnd,
+      }, { onConflict: "admin_user_id" });
+      if (initial_months > 0) {
+        await admin.from("subscription_payments").insert({
+          admin_user_id: newUserId,
+          amount: monthly_amount * initial_months,
+          months_requested: initial_months,
+          months_granted: initial_months,
+          status: "confirmed",
+          confirmed_by: callerId,
+          confirmed_at: now.toISOString(),
+          note: "Initial subscription set by developer",
+        });
+      }
+    }
+
     return json({ success: true, user_id: newUserId, reused: !!existingId });
   } catch (e) {
     return json({ error: (e as Error).message });

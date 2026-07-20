@@ -198,9 +198,38 @@ const AppLayout = () => {
         </div>
 
         <QuickActions />
-        <div className="p-4 sm:p-6 lg:p-10">
-          <Outlet />
-        </div>
+
+        {/* Subscription enforcement: banner during grace, lock when expired */}
+        {!isSuperAdmin && subscription.status === "grace" && location.pathname !== "/subscription" && (
+          <div className="bg-amber-500/15 border-b border-amber-500/40 text-amber-900 dark:text-amber-100 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              <span>Your subscription has ended. The system will close in <strong>{subscription.days_left} day(s)</strong>. Subscribe to continue.</span>
+            </div>
+            <Button size="sm" onClick={() => navigate("/subscription")}>Continue / Subscribe</Button>
+          </div>
+        )}
+
+        {!isSuperAdmin && subscription.status === "expired" && location.pathname !== "/subscription" ? (
+          <div className="p-6 sm:p-10">
+            <div className="max-w-xl mx-auto rounded-xl border border-destructive/40 bg-destructive/5 p-8 text-center space-y-4">
+              <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
+              <h2 className="font-display text-2xl font-bold">Your subscription has ended</h2>
+              <p className="text-muted-foreground">
+                {isPlatformAdmin
+                  ? "Please pay your subscription to restore access for you and your business accounts."
+                  : "Access is locked because your business admin's subscription has expired. Ask them to renew."}
+              </p>
+              {isPlatformAdmin && (
+                <Button onClick={() => navigate("/subscription")}>Go to subscription</Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 sm:p-6 lg:p-10">
+            <Outlet />
+          </div>
+        )}
       </main>
     </div>
   );

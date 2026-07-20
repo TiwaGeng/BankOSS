@@ -123,7 +123,8 @@ const NavTree = ({ nav, openGroups, toggle, onNavigate }: { nav: NavItem[]; open
 );
 
 const AppLayout = () => {
-  const { user, roles, signOut, loading, hasRole } = useAuth();
+  const { user, roles, signOut, loading, hasRole, isSuperAdmin, isPlatformAdmin } = useAuth();
+  const subscription = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);

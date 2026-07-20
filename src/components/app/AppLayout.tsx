@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Landmark, LayoutDashboard, Users, HandCoins, Receipt, BarChart3, LogOut, ArrowLeftRight, UserCog, ChevronDown, Settings as SettingsIcon, Menu, X, Building2, ShieldCheck, FileText } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { Landmark, LayoutDashboard, Users, HandCoins, Receipt, BarChart3, LogOut, ArrowLeftRight, UserCog, ChevronDown, Settings as SettingsIcon, Menu, X, Building2, ShieldCheck, FileText, CreditCard, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import QuickActions from "@/components/app/QuickActions";

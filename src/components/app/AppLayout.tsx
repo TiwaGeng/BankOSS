@@ -24,6 +24,7 @@ const platformAdminNav: NavItem[] = [
   { type: "link", to: "/admin/businesses", label: "Businesses", icon: Building2 },
   { type: "link", to: "/admin/payments", label: "Payments", icon: Receipt },
   { type: "link", to: "/admin/transactions", label: "Transactions", icon: ArrowLeftRight },
+  { type: "link", to: "/subscription", label: "Subscription", icon: CreditCard },
   { type: "link", to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 

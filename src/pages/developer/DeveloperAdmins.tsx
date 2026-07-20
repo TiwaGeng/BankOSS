@@ -90,6 +90,8 @@ const DeveloperAdmins = () => {
         email: parsed.data.email,
         phone: parsed.data.phone || null,
         password: parsed.data.password,
+        monthly_amount: form.enable_payment ? Number(form.monthly_amount || 0) : 0,
+        initial_months: form.enable_payment ? Number(form.initial_months || 0) : 0,
       },
     });
     setSubmitting(false);
@@ -99,7 +101,7 @@ const DeveloperAdmins = () => {
       return;
     }
     toast({ title: "Admin created", description: `${parsed.data.email} can sign in.` });
-    setForm({ full_name: "", email: "", phone: "", password: "" });
+    setForm({ full_name: "", email: "", phone: "", password: "", enable_payment: false, monthly_amount: "", initial_months: "1" });
     load();
   };
 

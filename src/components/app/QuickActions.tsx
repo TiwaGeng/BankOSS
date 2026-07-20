@@ -28,6 +28,8 @@ const QuickActions = () => {
   const { user, hasRole } = useAuth();
   const nav = useNavigate();
   const canPost = hasRole(["admin", "accountant"]);
+  const canAddClient = hasRole(["admin", "accountant", "loan_officer"]);
+  const canGiveLoan = hasRole(["admin", "loan_officer"]);
   const [kind, setKind] = useState<Kind | null>(null);
   const [bankingType, setBankingType] = useState<"income" | "expense">("income");
 

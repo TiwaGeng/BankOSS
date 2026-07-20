@@ -31,6 +31,9 @@ const schema = z.object({
   email: z.string().trim().email().max(255),
   phone: z.string().trim().max(30).optional().or(z.literal("")),
   password: z.string().min(6).max(72),
+  enable_payment: z.boolean().optional(),
+  monthly_amount: z.coerce.number().min(0).optional(),
+  initial_months: z.coerce.number().int().min(0).max(24).optional(),
 });
 
 interface AdminRow {

@@ -65,6 +65,12 @@ const QuickActions = () => {
   return (
     <div className="sticky top-0 z-30 bg-card/95 backdrop-blur border-b">
       <div className="flex flex-wrap items-center gap-2 px-4 lg:px-6 py-2.5">
+        {canAddClient && (
+          <Button size="sm" className={btn} onClick={() => nav("/clients/new")}><UserPlus className="h-4 w-4" /> Add Client</Button>
+        )}
+        {canGiveLoan && (
+          <Button size="sm" className={btn} onClick={() => nav("/loans/new")}><HandCoins className="h-4 w-4" /> Give Loan</Button>
+        )}
         {canPost && <>
           <Button size="sm" variant="outline" className={btn} onClick={() => setKind("payable")}><ArrowUpCircle className="h-4 w-4" /> Add Payable</Button>
           <Button size="sm" variant="outline" className={btn} onClick={() => setKind("receivable")}><ArrowDownCircle className="h-4 w-4" /> Add Receivable</Button>

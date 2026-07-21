@@ -33,6 +33,7 @@ import DeveloperDashboard from "./pages/developer/DeveloperDashboard";
 import DeveloperAdmins from "./pages/developer/DeveloperAdmins";
 import AdminBusinessesView from "./pages/developer/AdminBusinesses";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import BusinessBilling from "./pages/admin/BusinessBilling";
 import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 
@@ -68,6 +69,7 @@ const App = () => (
               {/* Platform admin portal */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/businesses" element={<Businesses />} />
+              <Route path="/admin/businesses/:id/billing" element={<BusinessBilling />} />
               <Route path="/admin/payments" element={<Payments />} />
               <Route path="/admin/transactions" element={<Transactions />} />
               <Route path="/admin/settings" element={<Settings />} />

@@ -11,29 +11,26 @@ export interface Subscription {
   current_period_end: string | null;
   grace_end: string | null;
   admin_user_id: string | null;
+  business_id: string | null;
+  applies: boolean;
 }
 
 export function useSubscription() {
-  const { user, isSuperAdmin, isPlatformAdmin, businessId } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const [sub, setSub] = useState<Subscription>({
     status: "loading", days_left: 0, monthly_amount: 0,
-    current_period_end: null, grace_end: null, admin_user_id: null,
+    current_period_end: null, grace_end: null, admin_user_id: null, business_id: null, applies: false,
   });
 
-  const applies = !!user && !isSuperAdmin && (isPlatformAdmin || !!businessId);
-
   const refresh = async () => {
-    if (!applies) {
-      setSub((s) => ({ ...s, status: "inactive" }));
+    if (!user || isSuperAdmin) {
+      setSub((s) => ({ ...s, status: "inactive", applies: false }));
       return;
     }
     const { data } = await supabase.rpc("get_my_subscription_status");
     const row = (data ?? [])[0] as any;
     if (!row) {
-      setSub({
-        status: "inactive", days_left: 0, monthly_amount: 0,
-        current_period_end: null, grace_end: null, admin_user_id: null,
-      });
+      setSub({ status: "inactive", days_left: 0, monthly_amount: 0, current_period_end: null, grace_end: null, admin_user_id: null, business_id: null, applies: false });
       return;
     }
     setSub({
@@ -43,10 +40,12 @@ export function useSubscription() {
       current_period_end: row.current_period_end,
       grace_end: row.grace_end,
       admin_user_id: row.admin_user_id,
+      business_id: row.business_id ?? null,
+      applies: true,
     });
   };
 
-  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [user?.id, businessId, isSuperAdmin, isPlatformAdmin]);
+  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [user?.id, isSuperAdmin]);
 
-  return { ...sub, refresh, applies };
+  return { ...sub, refresh };
 }

@@ -69,6 +69,7 @@ const App = () => (
               {/* Platform admin portal */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/businesses" element={<Businesses />} />
+              <Route path="/admin/businesses/:id/billing" element={<BusinessBilling />} />
               <Route path="/admin/payments" element={<Payments />} />
               <Route path="/admin/transactions" element={<Transactions />} />
               <Route path="/admin/settings" element={<Settings />} />

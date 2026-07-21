@@ -33,6 +33,7 @@ import DeveloperDashboard from "./pages/developer/DeveloperDashboard";
 import DeveloperAdmins from "./pages/developer/DeveloperAdmins";
 import AdminBusinessesView from "./pages/developer/AdminBusinesses";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import BusinessBilling from "./pages/admin/BusinessBilling";
 import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 

@@ -129,13 +129,19 @@ const AppLayout = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const nav: NavItem[] = hasRole("super_admin")
+  let nav: NavItem[] = hasRole("super_admin")
     ? developerNav
     : hasRole("platform_admin")
     ? platformAdminNav
     : hasRole("admin")
     ? [...businessNav, { type: "link", to: "/employees", label: "Employees", icon: UserCog }]
     : businessNav;
+  // Hide subscription link when subscription doesn't apply
+  if (!subscription.applies) {
+    nav = nav.filter((n) => !(n.type === "link" && n.to === "/subscription"));
+  } else if (hasRole("admin") && !nav.some((n) => n.type === "link" && n.to === "/subscription")) {
+    nav = [...nav, { type: "link", to: "/subscription", label: "Subscription", icon: CreditCard }];
+  }
 
   const initialOpen: Record<string, boolean> = {};
   nav.forEach((n) => {

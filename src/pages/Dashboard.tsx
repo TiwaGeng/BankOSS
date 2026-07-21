@@ -25,51 +25,61 @@ const Dashboard = () => {
   const [todayServiceFees, setTodayServiceFees] = useState(0);
   const [todayIncome, setTodayIncome] = useState(0);
   const [todayExpenses, setTodayExpenses] = useState(0);
+  const [startBalance, setStartBalance] = useState(0); // running balance up to yesterday
   const [noLoanClients, setNoLoanClients] = useState<Client[]>([]);
   const [adminPhone, setAdminPhone] = useState<string>("");
 
   const [reportOpen, setReportOpen] = useState(false);
-  const [startBal, setStartBal] = useState("");
-  const [endBal, setEndBal] = useState("");
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
     (async () => {
       const t = today();
-      const [{ count: clients }, loansRes, payRes, todayLoansRes, allClientsRes, activeLoansRes, txTodayRes] = await Promise.all([
+      const [{ count: clients }, loansAllRes, payAllRes, allLoansFeesRes, allClientsRes, activeLoansRes, txAllRes] = await Promise.all([
         supabase.from("clients").select("*", { count: "exact", head: true }),
-        supabase.from("loans").select("status, principal"),
+        supabase.from("loans").select("status, principal, given_at, service_fee"),
         supabase.from("payments").select("amount, paid_at"),
-        supabase.from("loans").select("principal, service_fee, given_at").eq("given_at", t),
+        supabase.from("loans").select("service_fee, given_at"),
         supabase.from("clients").select("id, full_name, last_name, phone").order("full_name"),
         supabase.from("loans").select("client_id").in("status", ["active", "overdue", "renewed"]),
-        supabase.from("transactions").select("type, amount, occurred_at").eq("occurred_at", t),
+        supabase.from("transactions").select("type, amount, occurred_at"),
       ]);
-      const loans = loansRes.data ?? [];
-      const pays = payRes.data ?? [];
+      const loans = loansAllRes.data ?? [];
+      const pays = payAllRes.data ?? [];
+      const feesAll = allLoansFeesRes.data ?? [];
+      const txAll = (txAllRes.data ?? []) as { type: "income" | "expense"; amount: number; occurred_at: string }[];
+
       setStats({
         clients: clients ?? 0,
-        activeLoans: loans.filter((l) => l.status === "active").length,
-        overdue: loans.filter((l) => l.status === "overdue").length,
-        collected: pays.reduce((a, p) => a + Number(p.amount), 0),
+        activeLoans: loans.filter((l: any) => l.status === "active").length,
+        overdue: loans.filter((l: any) => l.status === "overdue").length,
+        collected: pays.reduce((a, p: any) => a + Number(p.amount), 0),
       });
-      const todayPay = pays.filter((p) => p.paid_at === t).reduce((a, p) => a + Number(p.amount), 0);
-      const todayLoans = todayLoansRes.data ?? [];
-      const loansOut = todayLoans.reduce((a, l: any) => a + Number(l.principal), 0);
-      const fees = todayLoans.reduce((a, l: any) => a + Number(l.service_fee ?? 0), 0);
-      const txs = (txTodayRes.data ?? []) as { type: "income" | "expense"; amount: number }[];
-      const income = txs.filter((t) => t.type === "income").reduce((a, t) => a + Number(t.amount), 0);
-      const expenses = txs.filter((t) => t.type === "expense").reduce((a, t) => a + Number(t.amount), 0);
+
+      // Today
+      const todayPay = pays.filter((p: any) => p.paid_at === t).reduce((a, p: any) => a + Number(p.amount), 0);
+      const todayLoansAll = loans.filter((l: any) => l.given_at === t);
+      const loansOutToday = todayLoansAll.reduce((a, l: any) => a + Number(l.principal), 0);
+      const feesToday = todayLoansAll.reduce((a, l: any) => a + Number(l.service_fee ?? 0), 0);
+      const incToday = txAll.filter((x) => x.occurred_at === t && x.type === "income").reduce((a, x) => a + Number(x.amount), 0);
+      const expToday = txAll.filter((x) => x.occurred_at === t && x.type === "expense").reduce((a, x) => a + Number(x.amount), 0);
       setTodayPayments(todayPay);
-      setTodayLoansOut(loansOut);
-      setTodayServiceFees(fees);
-      setTodayIncome(income);
-      setTodayExpenses(expenses);
+      setTodayLoansOut(loansOutToday);
+      setTodayServiceFees(feesToday);
+      setTodayIncome(incToday);
+      setTodayExpenses(expToday);
+
+      // Running balance up to (but not including) today = start balance
+      const priorPayments = pays.filter((p: any) => p.paid_at < t).reduce((a, p: any) => a + Number(p.amount), 0);
+      const priorLoans = loans.filter((l: any) => l.given_at < t).reduce((a, l: any) => a + Number(l.principal), 0);
+      const priorFees = feesAll.filter((l: any) => l.given_at < t).reduce((a, l: any) => a + Number(l.service_fee ?? 0), 0);
+      const priorIncome = txAll.filter((x) => x.occurred_at < t && x.type === "income").reduce((a, x) => a + Number(x.amount), 0);
+      const priorExpenses = txAll.filter((x) => x.occurred_at < t && x.type === "expense").reduce((a, x) => a + Number(x.amount), 0);
+      setStartBalance(priorPayments + priorFees + priorIncome - priorLoans - priorExpenses);
 
       const withLoans = new Set((activeLoansRes.data ?? []).map((l: { client_id: string }) => l.client_id));
       setNoLoanClients(((allClientsRes.data ?? []) as Client[]).filter((c) => !withLoans.has(c.id)));
 
-      // Admin phone lookup for WhatsApp report (business owner)
       if (businessId) {
         const { data: biz } = await supabase.from("businesses").select("owner_id, created_by").eq("id", businessId).maybeSingle();
         const ownerId = biz?.owner_id ?? biz?.created_by;
@@ -81,11 +91,11 @@ const Dashboard = () => {
     })();
   }, [businessId]);
 
-  // Cash at hand = client payments + service fees collected + manual income − loans disbursed − expenses
-  const cashAtHand = useMemo(
+  const todayNet = useMemo(
     () => todayPayments + todayServiceFees + todayIncome - todayLoansOut - todayExpenses,
     [todayPayments, todayServiceFees, todayIncome, todayLoansOut, todayExpenses],
   );
+  const cashAtHand = startBalance + todayNet; // end balance
 
   const cards = [
     { label: "Total Clients", value: fmt(stats.clients), icon: Users },
@@ -94,34 +104,29 @@ const Dashboard = () => {
     { label: "Collected (all)", value: fmt(stats.collected), icon: Wallet },
   ];
 
-  const buildReport = () => {
-    return [
-      `📊 Daily Report — ${today()}`,
-      ``,
-      `Starting balance: ${fmt(Number(startBal) || 0)}`,
-      `Ending balance:   ${fmt(Number(endBal) || 0)}`,
-      ``,
-      `Loans given to clients: ${fmt(todayLoansOut)}`,
-      `Payments from clients:  ${fmt(todayPayments)}`,
-      `Service / charge fees:  ${fmt(todayServiceFees)}`,
-      `Other income:           ${fmt(todayIncome)}`,
-      `Expenses:               ${fmt(todayExpenses)}`,
-      ``,
-      `💰 Cash in:   ${fmt(todayPayments + todayServiceFees + todayIncome)}`,
-      `💸 Cash out:  ${fmt(todayLoansOut + todayExpenses)}`,
-      `🏦 Cash at hand: ${fmt(cashAtHand)}`,
-    ].join("\n");
-  };
+  const buildReport = () => [
+    `📊 Daily Report — ${today()}`,
+    ``,
+    `Starting balance: ${fmt(startBalance)}`,
+    `Ending balance:   ${fmt(cashAtHand)}`,
+    ``,
+    `Loans given to clients: ${fmt(todayLoansOut)}`,
+    `Payments from clients:  ${fmt(todayPayments)}`,
+    `Service / charge fees:  ${fmt(todayServiceFees)}`,
+    `Other income:           ${fmt(todayIncome)}`,
+    `Expenses:               ${fmt(todayExpenses)}`,
+    ``,
+    `💰 Cash in:   ${fmt(todayPayments + todayServiceFees + todayIncome)}`,
+    `💸 Cash out:  ${fmt(todayLoansOut + todayExpenses)}`,
+    `🏦 Cash at hand: ${fmt(cashAtHand)}`,
+  ].join("\n");
 
   const sendReport = async () => {
     setSending(true);
     const text = buildReport();
     try { await navigator.clipboard.writeText(text); } catch { /* ignore */ }
-    // sanitize phone for wa.me (digits only, drop leading 00 / +)
     const digits = adminPhone.replace(/[^\d]/g, "").replace(/^0+/, "");
-    const url = digits
-      ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
-      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    const url = digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank");
     toast.success(adminPhone ? `Report opened to admin (${adminPhone})` : "Report ready — pick a contact in WhatsApp");
     setSending(false);
@@ -153,7 +158,6 @@ const Dashboard = () => {
         </Button>
       </div>
 
-      {/* Today summary + send report */}
       <Card className="shadow-soft">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Today — {today()}</CardTitle>
@@ -162,7 +166,11 @@ const Dashboard = () => {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-lg border bg-amber-50 dark:bg-amber-950/30 p-4">
+              <p className="text-sm text-muted-foreground">Start balance (carried over)</p>
+              <p className="font-display text-2xl font-bold">{fmt(startBalance)}</p>
+            </div>
             <div className="rounded-lg border bg-muted/40 p-4">
               <p className="text-sm text-muted-foreground">Loans given (cash out)</p>
               <p className="font-display text-2xl font-bold">{fmt(todayLoansOut)}</p>
@@ -183,15 +191,15 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Expenses</p>
               <p className="font-display text-2xl font-bold">{fmt(todayExpenses)}</p>
             </div>
-            <div className="rounded-lg border bg-primary/10 p-4">
-              <p className="text-sm text-muted-foreground">Cash at hand (remaining in office)</p>
-              <p className="font-display text-2xl font-bold">{fmt(cashAtHand)}</p>
+            <div className="rounded-lg border bg-primary/10 p-4 sm:col-span-2">
+              <p className="text-sm text-muted-foreground">Close balance / Cash at hand</p>
+              <p className="font-display text-3xl font-bold">{fmt(cashAtHand)}</p>
+              <p className="text-xs text-muted-foreground mt-1">= start balance + income − expenses (carries into tomorrow)</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Clients without loans */}
       <Card className="shadow-soft">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Clients without active loans ({noLoanClients.length})</CardTitle>
@@ -231,24 +239,20 @@ const Dashboard = () => {
           <DialogHeader><DialogTitle>Send daily report to admin</DialogTitle></DialogHeader>
           <div className="space-y-3">
             {adminPhone ? (
-              <p className="text-sm text-muted-foreground">
-                Will open WhatsApp to admin: <strong>{adminPhone}</strong>
-              </p>
+              <p className="text-sm text-muted-foreground">Will open WhatsApp to admin: <strong>{adminPhone}</strong></p>
             ) : (
-              <p className="text-sm text-destructive">Admin phone number is not set on their profile — WhatsApp will open with no recipient.</p>
+              <p className="text-sm text-destructive">Admin phone number is not set — WhatsApp will open with no recipient.</p>
             )}
             <div className="rounded-md bg-muted/40 p-3 text-sm space-y-1">
+              <div className="flex justify-between"><span>Start balance</span><strong>{fmt(startBalance)}</strong></div>
               <div className="flex justify-between"><span>Loans given</span><strong>{fmt(todayLoansOut)}</strong></div>
               <div className="flex justify-between"><span>Payments received</span><strong>{fmt(todayPayments)}</strong></div>
               <div className="flex justify-between"><span>Service fees</span><strong>{fmt(todayServiceFees)}</strong></div>
               <div className="flex justify-between"><span>Income</span><strong>{fmt(todayIncome)}</strong></div>
               <div className="flex justify-between"><span>Expenses</span><strong>{fmt(todayExpenses)}</strong></div>
-              <div className="flex justify-between border-t pt-1 mt-1"><span>Cash at hand</span><strong>{fmt(cashAtHand)}</strong></div>
+              <div className="flex justify-between border-t pt-1 mt-1"><span>Close balance / cash at hand</span><strong>{fmt(cashAtHand)}</strong></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Starting balance</Label><Input type="number" value={startBal} onChange={(e) => setStartBal(e.target.value)} placeholder="0" /></div>
-              <div><Label>Ending balance</Label><Input type="number" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="0" /></div>
-            </div>
+            <div><Label>Note (optional)</Label><Input placeholder="Add any note that will be included in the WhatsApp message" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReportOpen(false)}>Cancel</Button>

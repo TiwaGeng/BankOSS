@@ -19,24 +19,36 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          initial_months: number
+          is_active: boolean
+          monthly_amount: number
           name: string
           owner_id: string | null
+          payment_enabled: boolean
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           id?: string
+          initial_months?: number
+          is_active?: boolean
+          monthly_amount?: number
           name: string
           owner_id?: string | null
+          payment_enabled?: boolean
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
           id?: string
+          initial_months?: number
+          is_active?: boolean
+          monthly_amount?: number
           name?: string
           owner_id?: string | null
+          payment_enabled?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -219,6 +231,8 @@ export type Database = {
           employee_type: Database["public"]["Enums"]["employee_type"] | null
           full_name: string | null
           id: string
+          is_active: boolean
+          payment_enabled: boolean
           phone: string | null
           updated_at: string
         }
@@ -229,6 +243,8 @@ export type Database = {
           employee_type?: Database["public"]["Enums"]["employee_type"] | null
           full_name?: string | null
           id: string
+          is_active?: boolean
+          payment_enabled?: boolean
           phone?: string | null
           updated_at?: string
         }
@@ -239,6 +255,8 @@ export type Database = {
           employee_type?: Database["public"]["Enums"]["employee_type"] | null
           full_name?: string | null
           id?: string
+          is_active?: boolean
+          payment_enabled?: boolean
           phone?: string | null
           updated_at?: string
         }
@@ -256,6 +274,7 @@ export type Database = {
         Row: {
           admin_user_id: string
           amount: number
+          business_id: string | null
           confirmed_at: string | null
           confirmed_by: string | null
           created_at: string
@@ -270,6 +289,7 @@ export type Database = {
         Insert: {
           admin_user_id: string
           amount: number
+          business_id?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
           created_at?: string
@@ -284,6 +304,7 @@ export type Database = {
         Update: {
           admin_user_id?: string
           amount?: number
+          business_id?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
           created_at?: string
@@ -295,11 +316,20 @@ export type Database = {
           proof_url?: string | null
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
           admin_user_id: string
+          business_id: string | null
           created_at: string
           current_period_end: string | null
           id: string
@@ -308,6 +338,7 @@ export type Database = {
         }
         Insert: {
           admin_user_id: string
+          business_id?: string | null
           created_at?: string
           current_period_end?: string | null
           id?: string
@@ -316,13 +347,22 @@ export type Database = {
         }
         Update: {
           admin_user_id?: string
+          business_id?: string | null
           created_at?: string
           current_period_end?: string | null
           id?: string
           monthly_amount?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
@@ -405,10 +445,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_subscription_payment: {
+        Args: { _payment_id: string }
+        Returns: undefined
+      }
       get_my_subscription_status: {
         Args: never
         Returns: {
           admin_user_id: string
+          business_id: string
           current_period_end: string
           days_left: number
           grace_end: string
@@ -438,6 +483,22 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      reject_subscription_payment: {
+        Args: { _payment_id: string; _reason?: string }
+        Returns: undefined
+      }
+      set_business_active: {
+        Args: { _active: boolean; _business_id: string }
+        Returns: undefined
+      }
+      set_platform_admin_active: {
+        Args: { _active: boolean; _user_id: string }
+        Returns: undefined
+      }
+      set_platform_admin_payment_enabled: {
+        Args: { _enabled: boolean; _user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:

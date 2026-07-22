@@ -72,6 +72,7 @@ const App = () => (
               <Route path="/admin/businesses/:id/billing" element={<BusinessBilling />} />
               <Route path="/admin/payments" element={<Payments />} />
               <Route path="/admin/transactions" element={<Transactions />} />
+              <Route path="/admin/reports" element={<Reports />} />
               <Route path="/admin/settings" element={<Settings />} />
 
               {/* Business user routes */}

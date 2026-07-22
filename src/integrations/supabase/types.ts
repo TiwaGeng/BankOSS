@@ -172,6 +172,36 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -232,6 +262,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_active: boolean
+          locked_reason: string | null
           payment_enabled: boolean
           phone: string | null
           updated_at: string
@@ -244,6 +275,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_active?: boolean
+          locked_reason?: string | null
           payment_enabled?: boolean
           phone?: string | null
           updated_at?: string
@@ -256,6 +288,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_active?: boolean
+          locked_reason?: string | null
           payment_enabled?: boolean
           phone?: string | null
           updated_at?: string
@@ -449,6 +482,13 @@ export type Database = {
         Args: { _payment_id: string }
         Returns: undefined
       }
+      get_effective_lock_status: {
+        Args: { _user_id: string }
+        Returns: {
+          locked: boolean
+          reason: string
+        }[]
+      }
       get_my_subscription_status: {
         Args: never
         Returns: {
@@ -491,10 +531,12 @@ export type Database = {
         Args: { _active: boolean; _business_id: string }
         Returns: undefined
       }
-      set_platform_admin_active: {
-        Args: { _active: boolean; _user_id: string }
-        Returns: undefined
-      }
+      set_platform_admin_active:
+        | { Args: { _active: boolean; _user_id: string }; Returns: undefined }
+        | {
+            Args: { _active: boolean; _reason?: string; _user_id: string }
+            Returns: undefined
+          }
       set_platform_admin_payment_enabled: {
         Args: { _enabled: boolean; _user_id: string }
         Returns: undefined

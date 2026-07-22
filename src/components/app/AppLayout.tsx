@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -6,6 +6,7 @@ import { Landmark, LayoutDashboard, Users, HandCoins, Receipt, BarChart3, LogOut
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import QuickActions from "@/components/app/QuickActions";
+import NotificationsBell from "@/components/app/NotificationsBell";
 
 type NavChild = { to: string; label: string };
 type NavItem =
@@ -22,8 +23,7 @@ const developerNav: NavItem[] = [
 const platformAdminNav: NavItem[] = [
   { type: "link", to: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { type: "link", to: "/admin/businesses", label: "Businesses", icon: Building2 },
-  { type: "link", to: "/admin/payments", label: "Payments", icon: Receipt },
-  { type: "link", to: "/admin/transactions", label: "Transactions", icon: ArrowLeftRight },
+  { type: "link", to: "/admin/reports", label: "Reports", icon: BarChart3 },
   { type: "link", to: "/subscription", label: "Subscription", icon: CreditCard },
   { type: "link", to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -123,7 +123,7 @@ const NavTree = ({ nav, openGroups, toggle, onNavigate }: { nav: NavItem[]; open
 );
 
 const AppLayout = () => {
-  const { user, roles, signOut, loading, hasRole, isSuperAdmin, isPlatformAdmin } = useAuth();
+  const { user, roles, signOut, loading, hasRole, isSuperAdmin, isPlatformAdmin, lockReason } = useAuth();
   const subscription = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
@@ -157,6 +157,22 @@ const AppLayout = () => {
     navigate("/auth", { replace: true });
     return null;
   }
+
+  // Route guards by role
+  const p = location.pathname;
+  const isDeveloperRoute = p.startsWith("/developer");
+  const isAdminRoute = p.startsWith("/admin");
+  const isBusinessRoute = !isDeveloperRoute && !isAdminRoute && !p.startsWith("/subscription") && !p.startsWith("/settings");
+
+  if (isSuperAdmin && !isDeveloperRoute && !p.startsWith("/settings")) return <Navigate to="/developer" replace />;
+  if (isPlatformAdmin && !isAdminRoute && !p.startsWith("/subscription") && !p.startsWith("/settings")) return <Navigate to="/admin" replace />;
+  if (!isSuperAdmin && !isPlatformAdmin && (isDeveloperRoute || isAdminRoute)) return <Navigate to="/dashboard" replace />;
+
+  // Platform admin locked for subscription reason: force /subscription
+  if (isPlatformAdmin && lockReason === "subscription" && p !== "/subscription") {
+    return <Navigate to="/subscription" replace />;
+  }
+
 
   const SidebarBody = ({ onNavigate }: { onNavigate?: () => void }) => (
     <>
@@ -198,10 +214,19 @@ const AppLayout = () => {
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2"><Landmark className="h-5 w-5 text-gold" /><span className="font-display font-bold">BankOS</span></div>
-          <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={async () => { await signOut(); navigate("/auth"); }}>
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={async () => { await signOut(); navigate("/auth"); }}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+
+        {/* Desktop top bar */}
+        <div className="hidden md:flex items-center justify-end gap-2 bg-primary/95 text-primary-foreground px-6 py-2">
+          <NotificationsBell />
+        </div>
+
 
         <QuickActions />
 

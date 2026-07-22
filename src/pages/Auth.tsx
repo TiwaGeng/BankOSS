@@ -19,6 +19,9 @@ const Auth = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [lockMsg, setLockMsg] = useState<string | null>(() => {
+    try { const m = sessionStorage.getItem("lock_message"); if (m) sessionStorage.removeItem("lock_message"); return m; } catch { return null; }
+  });
 
   if (loading) return null;
   if (user) return <Navigate to="/" replace />;
@@ -35,6 +38,14 @@ const Auth = () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return toast.error(error.message);
+    // Give useAuth a tick to run lock check and possibly sign out.
+    await new Promise((r) => setTimeout(r, 500));
+    const locked = (() => { try { return sessionStorage.getItem("lock_message"); } catch { return null; } })();
+    if (locked) {
+      try { sessionStorage.removeItem("lock_message"); } catch { /* noop */ }
+      setLockMsg(locked);
+      return;
+    }
     toast.success("Welcome back");
     navigate("/");
   };
@@ -88,6 +99,11 @@ const Auth = () => {
             <span className="font-display text-xl font-bold">BankOS</span>
           </div>
           <Tabs defaultValue="login">
+            {lockMsg && (
+              <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive p-3 text-sm">
+                {lockMsg}
+              </div>
+            )}
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>

@@ -15,10 +15,13 @@ interface AuthContextValue {
   isSuperAdmin: boolean;
   isPlatformAdmin: boolean;
   isBusinessUser: boolean;
+  lockReason: string | null;
   refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const LOCK_MESSAGE = "This account has been locked. Contact your admin for help to get back into the system. Thanks.";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -26,14 +29,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lockReason, setLockReason] = useState<string | null>(null);
 
   const loadProfile = async (uid: string) => {
-    const [{ data: r }, { data: p }] = await Promise.all([
+    const [{ data: r }, { data: p }, { data: lock }] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", uid),
       supabase.from("profiles").select("business_id").eq("id", uid).maybeSingle(),
+      supabase.rpc("get_effective_lock_status", { _user_id: uid }),
     ]);
-    setRoles((r?.map((x) => x.role) ?? []) as AppRole[]);
+    const rolesList = (r?.map((x) => x.role) ?? []) as AppRole[];
+    setRoles(rolesList);
     setBusinessId(p?.business_id ?? null);
+    const lockRow = (lock ?? [])[0] as { locked: boolean; reason: string | null } | undefined;
+    if (lockRow?.locked) {
+      const reason = lockRow.reason ?? "manual";
+      const isPlatform = rolesList.includes("platform_admin");
+      // Platform admin locked for subscription reason: keep signed in, show subscription page.
+      if (isPlatform && reason === "subscription") {
+        setLockReason("subscription");
+      } else {
+        setLockReason(null);
+        await supabase.auth.signOut();
+        try { sessionStorage.setItem("lock_message", LOCK_MESSAGE); } catch { /* noop */ }
+      }
+    } else {
+      setLockReason(null);
+    }
   };
 
   useEffect(() => {
@@ -45,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setRoles([]);
         setBusinessId(null);
+        setLockReason(null);
       }
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -62,9 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     roles,
     businessId,
     loading,
-    signOut: async () => {
-      await supabase.auth.signOut();
-    },
+    lockReason,
+    signOut: async () => { await supabase.auth.signOut(); },
     hasRole: (r) => {
       const arr = Array.isArray(r) ? r : [r];
       return arr.some((x) => roles.includes(x));
@@ -72,9 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isSuperAdmin: roles.includes("super_admin"),
     isPlatformAdmin: roles.includes("platform_admin"),
     isBusinessUser: !!businessId && !roles.includes("super_admin") && !roles.includes("platform_admin"),
-    refresh: async () => {
-      if (user) await loadProfile(user.id);
-    },
+    refresh: async () => { if (user) await loadProfile(user.id); },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

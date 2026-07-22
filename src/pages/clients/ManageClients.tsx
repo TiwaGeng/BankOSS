@@ -33,11 +33,18 @@ const ManageClients = () => {
     e.preventDefault();
     if (!editing) return;
     const fd = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
+    const phone = (fd.phone || "").trim();
+    if (phone && !/^[+0-9 \-()]{7,20}$/.test(phone)) return toast.error("Invalid phone number");
     const { error } = await supabase.from("clients").update({
-      full_name: fd.full_name, last_name: fd.last_name || null, phone: fd.phone || null,
+      full_name: fd.full_name, last_name: fd.last_name || null, phone: phone || null,
       customer_type: editType, address: fd.address || null,
     } as never).eq("id", editing.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.code === "23505") {
+        return toast.error(/phone/i.test(error.message) ? "Another client already uses this phone number." : "Another client with the same first + last name + phone already exists.");
+      }
+      return toast.error(error.message);
+    }
     toast.success("Updated");
     setEditing(null);
     load();

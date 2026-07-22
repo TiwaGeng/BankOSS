@@ -159,6 +159,22 @@ const AppLayout = () => {
     return null;
   }
 
+  // Route guards by role
+  const p = location.pathname;
+  const isDeveloperRoute = p.startsWith("/developer");
+  const isAdminRoute = p.startsWith("/admin");
+  const isBusinessRoute = !isDeveloperRoute && !isAdminRoute && !p.startsWith("/subscription") && !p.startsWith("/settings");
+
+  if (isSuperAdmin && !isDeveloperRoute && !p.startsWith("/settings")) return <Navigate to="/developer" replace />;
+  if (isPlatformAdmin && !isAdminRoute && !p.startsWith("/subscription") && !p.startsWith("/settings")) return <Navigate to="/admin" replace />;
+  if (!isSuperAdmin && !isPlatformAdmin && (isDeveloperRoute || isAdminRoute)) return <Navigate to="/dashboard" replace />;
+
+  // Platform admin locked for subscription reason: force /subscription
+  if (isPlatformAdmin && lockReason === "subscription" && p !== "/subscription") {
+    return <Navigate to="/subscription" replace />;
+  }
+
+
   const SidebarBody = ({ onNavigate }: { onNavigate?: () => void }) => (
     <>
       <div className="flex items-center gap-2 mb-8">
@@ -199,10 +215,19 @@ const AppLayout = () => {
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2"><Landmark className="h-5 w-5 text-gold" /><span className="font-display font-bold">BankOS</span></div>
-          <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={async () => { await signOut(); navigate("/auth"); }}>
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={async () => { await signOut(); navigate("/auth"); }}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+
+        {/* Desktop top bar */}
+        <div className="hidden md:flex items-center justify-end gap-2 bg-primary/95 text-primary-foreground px-6 py-2">
+          <NotificationsBell />
+        </div>
+
 
         <QuickActions />
 

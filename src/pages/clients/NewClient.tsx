@@ -12,10 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
+const phoneRegex = /^[+0-9 \-()]{7,20}$/;
 const schema = z.object({
   first_name: z.string().trim().min(1, "First name required").max(80),
   last_name: z.string().trim().min(1, "Last name required").max(80),
-  phone: z.string().trim().max(40).optional().or(z.literal("")),
+  phone: z.string().trim().regex(phoneRegex, "Invalid phone (7-20 digits, +, -, spaces allowed)").optional().or(z.literal("")),
   customer_type: z.enum(["field", "office"]),
   address: z.string().trim().max(200).optional().or(z.literal("")),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
@@ -54,15 +55,22 @@ const NewClient = () => {
     const fd = { ...Object.fromEntries(new FormData(form)), customer_type: customerType };
     const parsed = schema.safeParse(fd);
     if (!parsed.success) { setSaving(false); return toast.error(parsed.error.errors[0].message); }
-    const { first_name, last_name, ...rest } = parsed.data;
+    const { first_name, last_name, phone, ...rest } = parsed.data;
     const { error } = await supabase.from("clients").insert({
       ...rest,
       full_name: first_name,
       last_name,
+      phone: phone || null,
       created_by: user!.id,
     } as never);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.code === "23505") {
+        if (/phone/i.test(error.message)) return toast.error("A client with this phone number already exists.");
+        return toast.error("A client with the same first name, last name, and phone already exists.");
+      }
+      return toast.error(error.message);
+    }
     toast.success("✓ Client added successfully!");
     setCountdown(5);
     form.reset();

@@ -80,8 +80,21 @@ const Subscription = () => {
       });
       if (error) throw error;
       toast.success("Payment submitted — waiting for approval");
+      // Notify platform admin via WhatsApp
+      if (sub.business_id) {
+        const { data: biz } = await supabase.from("businesses").select("name, created_by").eq("id", sub.business_id).maybeSingle();
+        if (biz?.created_by) {
+          const { data: adminProf } = await supabase.from("profiles").select("phone").eq("id", biz.created_by).maybeSingle();
+          if (adminProf?.phone) {
+            const digits = adminProf.phone.replace(/[^\d]/g, "").replace(/^0+/, "");
+            const msg = encodeURIComponent(`Hi, ${biz.name} has submitted a subscription payment of ${amt} for ${months} month(s). Please review it in the billing page.`);
+            window.open(`https://wa.me/${digits}?text=${msg}`, "_blank");
+          }
+        }
+      }
       setNote(""); setFile(null); if (fileRef.current) fileRef.current.value = "";
       await load();
+
     } catch (err) { toast.error((err as Error).message); }
     finally { setBusy(false); }
   };

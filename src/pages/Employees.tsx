@@ -206,6 +206,8 @@ const Employees = () => {
                   <TableHead>Work type</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -228,10 +230,18 @@ const Employees = () => {
                       </Select>
                     </TableCell>
                     <TableCell>{new Date(emp.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{emp.is_active ? <Badge>Active</Badge> : <Badge variant="destructive">Locked</Badge>}</TableCell>
+                    <TableCell className="text-right">
+                      {emp.id !== user?.id && (
+                        <Button size="sm" variant={emp.is_active ? "destructive" : "default"} onClick={() => toggleActive(emp)}>
+                          {emp.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {employees.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No employees yet.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No employees yet.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

@@ -36,6 +36,7 @@ interface Employee {
   full_name: string | null;
   phone: string | null;
   employee_type: EmpType | null;
+  is_active: boolean;
   created_at: string;
   role: Role;
 }
@@ -52,12 +53,13 @@ const Employees = () => {
   const load = async () => {
     setLoading(true);
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-    const { data: profiles } = await supabase.from("profiles").select("id, full_name, phone, employee_type, created_at");
+    const { data: profiles } = await supabase.from("profiles").select("id, full_name, phone, employee_type, is_active, created_at");
     const merged: Employee[] = (profiles ?? []).map((p) => ({
       id: p.id,
       full_name: p.full_name,
       phone: p.phone,
       employee_type: (p as { employee_type: EmpType | null }).employee_type ?? null,
+      is_active: (p as { is_active?: boolean }).is_active ?? true,
       created_at: p.created_at,
       role: (roles?.find((r) => r.user_id === p.id)?.role ?? "viewer") as Role,
     }));
@@ -103,6 +105,17 @@ const Employees = () => {
     toast({ title: "Role updated" });
     load();
   };
+
+  const toggleActive = async (emp: Employee) => {
+    const { error } = await supabase.from("profiles").update({
+      is_active: !emp.is_active,
+      locked_reason: emp.is_active ? "manual" : null,
+    } as never).eq("id", emp.id);
+    if (error) return toast({ title: "Failed", description: error.message, variant: "destructive" });
+    toast({ title: emp.is_active ? "Employee deactivated" : "Employee activated" });
+    load();
+  };
+
 
   if (!isAdmin) {
     return (

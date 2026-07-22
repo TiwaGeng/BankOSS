@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -6,6 +6,7 @@ import { Landmark, LayoutDashboard, Users, HandCoins, Receipt, BarChart3, LogOut
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import QuickActions from "@/components/app/QuickActions";
+import NotificationsBell from "@/components/app/NotificationsBell";
 
 type NavChild = { to: string; label: string };
 type NavItem =
@@ -123,7 +124,7 @@ const NavTree = ({ nav, openGroups, toggle, onNavigate }: { nav: NavItem[]; open
 );
 
 const AppLayout = () => {
-  const { user, roles, signOut, loading, hasRole, isSuperAdmin, isPlatformAdmin } = useAuth();
+  const { user, roles, signOut, loading, hasRole, isSuperAdmin, isPlatformAdmin, lockReason } = useAuth();
   const subscription = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();

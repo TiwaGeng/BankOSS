@@ -99,6 +99,11 @@ const Auth = () => {
             <span className="font-display text-xl font-bold">BankOS</span>
           </div>
           <Tabs defaultValue="login">
+            {lockMsg && (
+              <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive p-3 text-sm">
+                {lockMsg}
+              </div>
+            )}
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
